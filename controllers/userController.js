@@ -38,7 +38,7 @@ const registerUser = [
   asyncHandler(async (req, res) => {
     const { phone, email, password, otp, first_name, last_name, location, state, city, address, role } = req.body;
     const user = await createUser({ phone, email, password, otp, first_name, last_name, location, state, city, address, role });
-    res.status(201).json({
+    res.status(200).json({
       message: 'User registered successfully',
       data: { id: user._id, phone, email, role: user.role },
     });

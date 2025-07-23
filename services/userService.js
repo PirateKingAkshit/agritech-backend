@@ -140,7 +140,7 @@ const loginUserAdmin = async ({ email, password }, { ipAddress }) => {
   });
 
   const token = jwt.sign({ id: user._id, phone: user.phone, role: user.role }, process.env.JWT_SECRET, {
-    expiresIn: '1h',
+    expiresIn: '12h',
   });
   logger.info(`User logged in: ${email} from IP ${ipAddress || 'unknown'}`);
 
@@ -164,6 +164,7 @@ const getUserById = async (userId, requestingUser) => {
 };
 
 const getAllUsers = async (page = 1, limit = 10, requestingUser) => {
+  console.log(requestingUser);
   if (requestingUser.role !== 'Admin') {
     throw new Error('Unauthorized to access all users', 403);
   }
