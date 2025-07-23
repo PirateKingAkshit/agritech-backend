@@ -10,7 +10,7 @@ const startServer = async () => {
   try {
     validateEnv();
     await connectDB();
-    const PORT = process.env.PORT || 6000;
+    const PORT = process.env.PORT || 5000;
     const server = app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
     });

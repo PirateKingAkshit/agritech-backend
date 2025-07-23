@@ -3,7 +3,7 @@ const AppError = require('./error');
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.string().default('6000'),
+  PORT: z.string().default('5000'),
   MONGO_URI: z.string().url().min(1, 'MongoDB URI is required'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   CORS_ORIGIN: z.string().optional(),

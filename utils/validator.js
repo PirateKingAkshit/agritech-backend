@@ -118,6 +118,22 @@ const validateOtpVerify = [
     .withMessage('OTP must be a 6-digit number'),
 ];
 
+const validateCreateCrop = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('category').trim().notEmpty().withMessage('Category is required'),
+  body('description').trim().notEmpty().withMessage('Description is required'),
+  body('variety').trim().notEmpty().withMessage('Variety is required'),
+  body('season').trim().notEmpty().withMessage('Season is required'),
+];
+
+const validateUpdateCrop = [
+  body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
+  body('category').optional().trim().notEmpty().withMessage('Category cannot be empty'),
+  body('description').optional().trim().notEmpty().withMessage('Description cannot be empty'),
+  body('variety').optional().trim().notEmpty().withMessage('Variety cannot be empty'),
+  body('season').optional().trim().notEmpty().withMessage('Season cannot be empty'),
+];
+
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -139,5 +155,7 @@ module.exports = {
   validatePagination,
   validateOtpGenerate,
   validateOtpVerify,
+  validateCreateCrop,
+  validateUpdateCrop,
   handleValidationErrors,
 };

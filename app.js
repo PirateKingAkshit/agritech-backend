@@ -5,6 +5,7 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const { errorMiddleware } = require('./middleware/errorMiddleware');
 const userRoutes = require('./routes/userRoutes');
+const cropMasterRoutes = require('./routes/cropMasterRoutes');
 const logger = require('./utils/logger');
 
 const app = express();
@@ -28,9 +29,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/crop-master', cropMasterRoutes);
 
 // Health Check
-app.get('/health', (req, res) => {
+app.get('/api/v1/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 

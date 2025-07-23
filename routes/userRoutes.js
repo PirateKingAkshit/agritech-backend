@@ -11,7 +11,7 @@ router.post('/otp/resend', resendOtpHandler);
 router.post('/register', registerUser);
 router.post('/login', loginUser);
 router.get('/profile', authMiddleware, getUserProfile);
-router.get('/', authMiddleware, getAllUsers);
+router.get('/', getAllUsers);
 router.get('/:id', authMiddleware, getUser);
 router.put('/:id', authMiddleware, updateUserDetails);
 router.delete('/:id', authMiddleware, deleteUserAccount);
