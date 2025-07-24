@@ -11,7 +11,7 @@ const authMiddleware = (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, "s8F2vR1tLq6XeA9zYcMhGpWjT4KnUoCd");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     logger.info(`Authenticated user: ${decoded.phone}`);
     next();

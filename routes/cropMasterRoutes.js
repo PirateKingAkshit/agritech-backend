@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
-const { createCrop, getAllCrops, getCropById, updateCrop, deleteCrop } = require('../controllers/cropMasterController');
+const { createCrop, getAllCrops, getCropById, updateCrop, deleteCrop, disableCrop, enableCrop } = require('../controllers/cropMasterController');
 const { createMulterInstance } = require('../utils/multerConfig');
 
 // Create Multer instance for CropMaster
@@ -16,5 +16,7 @@ router.get('/', authMiddleware, getAllCrops);
 router.get('/:id', authMiddleware, getCropById);
 router.put('/:id', authMiddleware, upload.single('image'), updateCrop);
 router.delete('/:id', authMiddleware, deleteCrop);
+router.put('/disable/:id', authMiddleware, disableCrop);
+router.put('/enable/:id', authMiddleware, enableCrop);
 
 module.exports = router;

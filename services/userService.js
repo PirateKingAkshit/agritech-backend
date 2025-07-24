@@ -145,12 +145,12 @@ const loginUserAdmin = async ({ email, password }, { ipAddress }) => {
     ipAddress,
   });
 
-  const token = jwt.sign({ id: user._id, phone: user.phone, role: user.role }, process.env.JWT_SECRET, {
+  const token = jwt.sign({ id: user._id, phone: user.phone, role: user.role, email: user.email }, process.env.JWT_SECRET, {
     expiresIn: '12h',
   });
   logger.info(`User logged in: ${email} from IP ${ipAddress || 'unknown'}`);
 
-  return { token, data: { id: user._id, phone: user.phone, email, role: user.role } };
+  return { token, data: { id: user._id, phone: user.phone, email, role: user.role }, message: 'Login successful' };
 };
 
 const getUserById = async (userId, requestingUser) => {

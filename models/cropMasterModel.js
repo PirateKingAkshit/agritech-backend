@@ -16,7 +16,7 @@ const cropMasterSchema = new mongoose.Schema(
       trim: true,
     },
     image: {
-      type: String, // Path to the uploaded image
+      type: String,
     },
     variety: {
       type: String,
@@ -25,6 +25,10 @@ const cropMasterSchema = new mongoose.Schema(
     season: {
       type: String,
       trim: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
     },
     deleted_at: {
       type: Date,

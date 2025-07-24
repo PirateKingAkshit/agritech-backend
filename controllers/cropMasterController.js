@@ -1,6 +1,6 @@
 const { asyncHandler } = require('../utils/asyncHandler');
 const { validateCreateCrop, validateUpdateCrop, handleValidationErrors } = require('../utils/validator');
-const { createCropService, getAllCropsService, getCropByIdService, updateCropService, deleteCropService } = require('../services/cropMasterService');
+const { createCropService, getAllCropsService, getCropByIdService, updateCropService, deleteCropService, disableCropService, enableCropService } = require('../services/cropMasterService');
 
 const createCrop = [
   validateCreateCrop,
@@ -44,10 +44,22 @@ const deleteCrop = asyncHandler(async (req, res) => {
   res.status(200).json({ message: 'Crop deleted successfully', data: crop });
 });
 
+const disableCrop = asyncHandler(async (req, res) => {
+  const crop = await disableCropService(req.params.id);
+  res.status(200).json({ message: 'Crop disabled successfully', data: crop });
+});
+
+const enableCrop = asyncHandler(async (req, res) => {
+  const crop = await enableCropService(req.params.id);
+  res.status(200).json({ message: 'Crop enabled successfully', data: crop });
+});
+
 module.exports = {
   createCrop,
   getAllCrops,
   getCropById,
   updateCrop,
   deleteCrop,
+  disableCrop,
+  enableCrop,
 };
