@@ -2,7 +2,7 @@ const { body, validationResult, param, query } = require('express-validator');
 const Error = require('./error');
 
 const validateUser = [
-  // Phone is always required
+  // Phone - Always required
   body('phone')
     .trim()
     .notEmpty()
@@ -10,73 +10,62 @@ const validateUser = [
     .matches(/^\+?[1-9]\d{1,14}$/)
     .withMessage('Invalid phone number format'),
 
-  // Role is optional but needs to be valid if provided
+  // Role - optional but validated if present
   body('role')
     .optional({ checkFalsy: true })
     .isIn(['Admin', 'User'])
     .withMessage('Role must be Admin or User'),
 
-  // Email is required only if role is Admin
+  // Email - required if role is Admin
   body('email')
-    .optional({ checkFalsy: true })
-    .isEmail()
-    .withMessage('Invalid email')
-    .normalizeEmail()
+    .trim()
     .custom((value, { req }) => {
       if (req.body.role === 'Admin' && !value) {
         throw new Error('Email is required for Admin role');
       }
-      return true;
-    }),
-
-  // Password is required only if role is Admin
-  body('password')
-    .optional({ checkFalsy: true })
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .custom((value, { req }) => {
-      if (req.body.role === 'Admin' && !value) {
-        throw new Error('Password is required for Admin role');
+      if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        throw new Error('Invalid email');
       }
       return true;
     }),
 
-  // Other optional fields
-  body('otp')
-    .optional({ checkFalsy: true })
-    .isString()
-    .matches(/^\d{6}$/)
-    .withMessage('OTP must be a 6-digit number'),
+  // Password - required if role is Admin
+  body('password')
+    .trim()
+    .custom((value, { req }) => {
+      if (req.body.role === 'Admin' && !value) {
+        throw new Error('Password is required for Admin role');
+      }
+      if (value && value.length < 8) {
+        throw new Error('Password must be at least 8 characters');
+      }
+      return true;
+    }),
 
-  body('first_name')
-    .optional({ checkFalsy: true })
-    .trim(),
-
-  body('last_name')
-    .optional({ checkFalsy: true })
-    .trim(),
-
-  body('state')
-    .optional({ checkFalsy: true })
-    .trim(),
-
-  body('city')
-    .optional({ checkFalsy: true })
-    .trim(),
-
-  body('address')
-    .optional({ checkFalsy: true })
-    .trim(),
+  // Other fields - optional
+  body('first_name').optional({ checkFalsy: true }).trim(),
+  body('last_name').optional({ checkFalsy: true }).trim(),
+  body('state').optional({ checkFalsy: true }).trim(),
+  body('city').optional({ checkFalsy: true }).trim(),
+  body('address').optional({ checkFalsy: true }).trim(),
 
   body('location.lat')
     .optional({ checkFalsy: true })
-    .isFloat({ min: -90, max: 90 })
-    .withMessage('Latitude must be between -90 and 90'),
+    .custom((value) => {
+      if (value && (isNaN(value) || value < -90 || value > 90)) {
+        throw new Error('Latitude must be between -90 and 90');
+      }
+      return true;
+    }),
 
   body('location.long')
     .optional({ checkFalsy: true })
-    .isFloat({ min: -180, max: 180 })
-    .withMessage('Longitude must be between -180 and 180'),
+    .custom((value) => {
+      if (value && (isNaN(value) || value < -180 || value > 180)) {
+        throw new Error('Longitude must be between -180 and 180');
+      }
+      return true;
+    }),
 ];
 
 const validateLogin = [

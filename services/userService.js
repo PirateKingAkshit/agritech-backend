@@ -87,7 +87,13 @@ const resendOtp = async (phone) => {
 };
 
 const createUser = async ({ phone, email, password, otp, first_name, last_name, location, state, city, address, role }) => {
-  const existingUser = await User.findOne({ $or: [{ phone }, { email: email || null }] });
+  let existingUser;
+  if(role === 'Admin'){
+    existingUser = await User.findOne({ email, deleted_at: null });
+  }
+  if(role === 'User'){
+    existingUser = await User.findOne({ phone, deleted_at: null });
+  }
   if (existingUser) {
     throw new Error('User already exists with this phone or email', 400);
   }
