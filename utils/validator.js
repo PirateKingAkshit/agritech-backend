@@ -2,62 +2,79 @@ const { body, validationResult, param, query } = require('express-validator');
 const Error = require('./error');
 
 const validateUser = [
+  // Phone is always required
   body('phone')
     .trim()
     .notEmpty()
     .withMessage('Phone number is required')
     .matches(/^\+?[1-9]\d{1,14}$/)
     .withMessage('Invalid phone number format'),
-  body('email')
-    .optional()
-    .isEmail()
-    .normalizeEmail()
-    .withMessage('Invalid email'),
-  body('password')
-    .optional()
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters'),
-  body('otp')
-    .optional()
-    .isString()
-    .trim()
-    .matches(/^\d{6}$/)
-    .withMessage('OTP must be a 6-digit number'),
-  body('first_name')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('First name cannot be empty'),
-  body('last_name')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('Last name cannot be empty'),
-  body('state')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('State cannot be empty'),
-  body('city')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('City cannot be empty'),
-  body('address')
-    .optional()
-    .trim()
-    .notEmpty()
-    .withMessage('Address cannot be empty'),
+
+  // Role is optional but needs to be valid if provided
   body('role')
-    .optional()
+    .optional({ checkFalsy: true })
     .isIn(['Admin', 'User'])
     .withMessage('Role must be Admin or User'),
+
+  // Email is required only if role is Admin
+  body('email')
+    .optional({ checkFalsy: true })
+    .isEmail()
+    .withMessage('Invalid email')
+    .normalizeEmail()
+    .custom((value, { req }) => {
+      if (req.body.role === 'Admin' && !value) {
+        throw new Error('Email is required for Admin role');
+      }
+      return true;
+    }),
+
+  // Password is required only if role is Admin
+  body('password')
+    .optional({ checkFalsy: true })
+    .isLength({ min: 8 })
+    .withMessage('Password must be at least 8 characters')
+    .custom((value, { req }) => {
+      if (req.body.role === 'Admin' && !value) {
+        throw new Error('Password is required for Admin role');
+      }
+      return true;
+    }),
+
+  // Other optional fields
+  body('otp')
+    .optional({ checkFalsy: true })
+    .isString()
+    .matches(/^\d{6}$/)
+    .withMessage('OTP must be a 6-digit number'),
+
+  body('first_name')
+    .optional({ checkFalsy: true })
+    .trim(),
+
+  body('last_name')
+    .optional({ checkFalsy: true })
+    .trim(),
+
+  body('state')
+    .optional({ checkFalsy: true })
+    .trim(),
+
+  body('city')
+    .optional({ checkFalsy: true })
+    .trim(),
+
+  body('address')
+    .optional({ checkFalsy: true })
+    .trim(),
+
   body('location.lat')
-    .optional()
+    .optional({ checkFalsy: true })
     .isFloat({ min: -90, max: 90 })
     .withMessage('Latitude must be between -90 and 90'),
+
   body('location.long')
-    .optional()
+    .optional({ checkFalsy: true })
     .isFloat({ min: -180, max: 180 })
     .withMessage('Longitude must be between -180 and 180'),
 ];
