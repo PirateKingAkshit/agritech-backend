@@ -67,8 +67,8 @@ const getAllUsers = [
   validatePagination,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10 } = req.query;
-    const result = await getAllUsersService(parseInt(page), parseInt(limit), req.user);
+    const { page = 1, limit = 10, q="" } = req.query;
+    const result = await getAllUsersService(parseInt(page), parseInt(limit), req.user, q);
     res.status(200).json(result);
   }),
 ];

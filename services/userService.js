@@ -169,15 +169,14 @@ const getUserById = async (userId, requestingUser) => {
   };
 };
 
-const getAllUsers = async (page = 1, limit = 10, requestingUser) => {
-  console.log(requestingUser);
+const getAllUsers = async (page = 1, limit = 10, requestingUser, search) => {
   if (requestingUser.role !== 'Admin') {
     throw new Error('Unauthorized to access all users', 403);
   }
 
   const skip = (page - 1) * limit;
-  const count = await User.countDocuments({ deleted_at: null });
-  const users = await User.find({ deleted_at: null })
+  const count = await User.countDocuments({ deleted_at: null, $or: [{ first_name: { $regex: search, $options: 'i' } }, { last_name: { $regex: search, $options: 'i' } }, { phone: { $regex: search, $options: 'i' } }, { email: { $regex: search, $options: 'i' } }] });
+  const users = await User.find({ deleted_at: null, $or: [{ first_name: { $regex: search, $options: 'i' } }, { last_name: { $regex: search, $options: 'i' } }, { phone: { $regex: search, $options: 'i' } }, { email: { $regex: search, $options: 'i' } }] }) 
     .select('-password -otp -otpExpires')
     .skip(skip)
     .limit(limit)

@@ -9,10 +9,10 @@ const createCropService = async (cropData) => {
   return crop;
 };
 
-const getAllCropsService = async (page, limit) => {
+const getAllCropsService = async (page, limit, search) => {
   const skip = (page - 1) * limit;
-  const count = await CropMaster.countDocuments({ deleted_at: null, isActive: true });
-  const crops = await CropMaster.find({ deleted_at: null, isActive: true })
+  const count = await CropMaster.countDocuments({ deleted_at: null, $or: [{ name: { $regex: search, $options: 'i' } }, { description: { $regex: search, $options: 'i' } }, { category: { $regex: search, $options: 'i' } }, { variety: { $regex: search, $options: 'i' } }, { season: { $regex: search, $options: 'i' } }] });
+  const crops = await CropMaster.find({ deleted_at: null, $or: [{ name: { $regex: search, $options: 'i' } }, { description: { $regex: search, $options: 'i' } }, { category: { $regex: search, $options: 'i' } }, { variety: { $regex: search, $options: 'i' } }, { season: { $regex: search, $options: 'i' } }] })
     .skip(skip)
     .limit(limit)
     .sort({ created_at: -1 });

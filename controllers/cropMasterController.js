@@ -16,8 +16,8 @@ const createCrop = [
 ];
 
 const getAllCrops = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10 } = req.query;
-  const result = await getAllCropsService(parseInt(page), parseInt(limit));
+  const { page = 1, limit = 10, q="" } = req.query;
+  const result = await getAllCropsService(parseInt(page), parseInt(limit), q);
   res.status(200).json(result);
 });
 
