@@ -7,6 +7,14 @@ const createProductService = async (productData, requestUser) => {
   if (requestUser.role !== "Admin") {
     throw new Error("Unauthorized", 403);
   }
+  const existingProductSkuCode = await ProductMaster.findOne({ skuCode: productData.skuCode, deleted_at: null });
+  if (existingProductSkuCode) {
+    throw new Error("Product with this sku code already exists", 409);
+  }
+  const existingProductName = await ProductMaster.findOne({ name: productData.name, deleted_at: null });
+  if (existingProductName) {
+    throw new Error("Product with this name already exists", 409);
+  }
   const product = new ProductMaster(productData);
   await product.save();
   return product;
@@ -54,6 +62,14 @@ const getProductByIdService = async (id) => {
 const updateProductService = async (id, updates, requestUser) => {
   if (requestUser.role !== "Admin") {
     throw new Error("Unauthorized", 403);
+  }
+  const existingProductSkuCode = await ProductMaster.findOne({ skuCode: updates.skuCode, deleted_at: null, _id: { $ne: id } });
+  if (existingProductSkuCode) {
+    throw new Error("Product with this sku code already exists", 409);
+  }
+  const existingProductName = await ProductMaster.findOne({ name: updates.name, deleted_at: null, _id: { $ne: id } });
+  if (existingProductName) {
+    throw new Error("Product with this name already exists", 409);
   }
   const product = await ProductMaster.findOne({
     _id: id,

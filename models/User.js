@@ -81,4 +81,6 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+userSchema.index({ phone: 1, deleted_at: 1 }, { unique: true });  //unique index for phone and deleted_at
+
 module.exports = mongoose.model("User", userSchema);

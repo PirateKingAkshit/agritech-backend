@@ -6,6 +6,7 @@ const cropMasterSchema = new mongoose.Schema(
       type: String,
       required: [true, "Crop name is required"],
       trim: true,
+      unique: true,
     },
     category: {
       type: String,
@@ -36,5 +37,7 @@ const cropMasterSchema = new mongoose.Schema(
   },
   { timestamps: true } // Automatically adds created_at and updated_at
 );
+
+cropMasterSchema.index({ name: 1, deleted_at: 1 }, { unique: true });  //unique index for name and deleted_at
 
 module.exports = mongoose.model("CropMaster", cropMasterSchema);

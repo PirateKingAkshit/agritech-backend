@@ -6,6 +6,7 @@ const productMasterSchema = new mongoose.Schema(
       type: String,
       required: [true, "Product name is required"],
       trim: true,
+      unique: true,
     },
     skuCode: {
       type: String,
@@ -46,5 +47,7 @@ const productMasterSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+productMasterSchema.index({ name: 1, deleted_at: 1, skuCode: 1 }, { unique: true });  //unique index for name, skuCode and deleted_at
 
 module.exports = mongoose.model("ProductMaster", productMasterSchema);

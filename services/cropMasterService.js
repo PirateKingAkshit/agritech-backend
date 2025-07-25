@@ -7,10 +7,14 @@ const createCropService = async (cropData, requestUser) => {
   if (requestUser.role !== "Admin") {
     throw new Error("Unauthorized", 403);
   }
-  const crop = new CropMaster(cropData);
+  const existingCrop = await CropMaster.findOne({ name: cropData.name, deleted_at: null });
+  if (existingCrop) {
+    throw new Error("Crop with this name already exists", 409);
+  }
+  const crop = new CropMaster(cropData); 
   await crop.save();
   return crop;
-};
+};  
 
 const getAllCropsService = async (page, limit, search) => {
   const skip = (page - 1) * limit;
@@ -58,6 +62,10 @@ const getCropByIdService = async (id) => {
 const updateCropService = async (id, updates, requestUser) => {
   if (requestUser.role !== "Admin") {
     throw new Error("Unauthorized", 403);
+  }
+  const existingCrop = await CropMaster.findOne({ name: updates.name, deleted_at: null, _id: { $ne: id } });
+  if (existingCrop) {
+    throw new Error("Crop with this name already exists", 409);
   }
   const crop = await CropMaster.findOne({
     _id: id,
