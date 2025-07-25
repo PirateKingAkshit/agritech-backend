@@ -1,10 +1,10 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const loginHistorySchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     phone: {
@@ -22,4 +22,4 @@ const loginHistorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('LoginHistory', loginHistorySchema);
+module.exports = mongoose.model("LoginHistory", loginHistorySchema);

@@ -1,7 +1,7 @@
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs').promises;
-const Error = require('./error');
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs").promises;
+const Error = require("./error");
 
 // Function to generate a unique filename by appending a suffix if needed
 const getUniqueFilename = async (destination, originalname) => {
@@ -11,7 +11,12 @@ const getUniqueFilename = async (destination, originalname) => {
   let counter = 1;
 
   // Check if file exists and append -1, -2, etc., until a unique name is found
-  while (await fs.access(path.join(destination, filename)).then(() => true).catch(() => false)) {
+  while (
+    await fs
+      .access(path.join(destination, filename))
+      .then(() => true)
+      .catch(() => false)
+  ) {
     filename = `${basename}-${counter}${ext}`;
     counter++;
   }
@@ -20,10 +25,17 @@ const getUniqueFilename = async (destination, originalname) => {
 };
 
 // Function to create a dynamic Multer instance
-const createMulterInstance = ({ allowedTypes, maxFileSize, destinationFolder }) => {
+const createMulterInstance = ({
+  allowedTypes,
+  maxFileSize,
+  destinationFolder,
+}) => {
   // Ensure destination folder exists
-  fs.mkdir(path.join(__dirname, '../', destinationFolder), { recursive: true })
-    .catch(err => console.error(`Failed to create directory ${destinationFolder}:`, err));
+  fs.mkdir(path.join(__dirname, "../", destinationFolder), {
+    recursive: true,
+  }).catch((err) =>
+    console.error(`Failed to create directory ${destinationFolder}:`, err)
+  );
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -31,10 +43,13 @@ const createMulterInstance = ({ allowedTypes, maxFileSize, destinationFolder }) 
     },
     filename: async (req, file, cb) => {
       try {
-        const uniqueFilename = await getUniqueFilename(destinationFolder, file.originalname);
+        const uniqueFilename = await getUniqueFilename(
+          destinationFolder,
+          file.originalname
+        );
         cb(null, uniqueFilename);
       } catch (error) {
-        cb(new Error('Error generating unique filename', 500));
+        cb(new Error("Error generating unique filename", 500));
       }
     },
   });
@@ -43,7 +58,12 @@ const createMulterInstance = ({ allowedTypes, maxFileSize, destinationFolder }) 
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`Invalid file type. Only ${allowedTypes.join(', ')} are allowed.`, 400));
+      cb(
+        new Error(
+          `Invalid file type. Only ${allowedTypes.join(", ")} are allowed.`,
+          400
+        )
+      );
     }
   };
 

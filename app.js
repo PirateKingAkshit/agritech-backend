@@ -7,17 +7,18 @@ const helmet = require('helmet');
 const { errorMiddleware } = require('./middleware/errorMiddleware');
 const userRoutes = require('./routes/userRoutes');
 const cropMasterRoutes = require('./routes/cropMasterRoutes');
+const productMasterRoutes = require('./routes/productRoutes');
 const logger = require('./utils/logger');
 
 const app = express();
 
 // Security Middleware
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+app.use(cors({ origin: '*' }));
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests
+    max: 100000, // Limit each IP to 100 requests
   })
 );
 
@@ -31,6 +32,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/crop-master', cropMasterRoutes);
+app.use('/api/v1/product-master', productMasterRoutes);
 
 // Health Check
 app.get('/api/v1/health', (req, res) => {

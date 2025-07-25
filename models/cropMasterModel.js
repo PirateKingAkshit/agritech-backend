@@ -1,10 +1,10 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const cropMasterSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, 'Crop name is required'],
+      required: [true, "Crop name is required"],
       trim: true,
     },
     category: {
@@ -37,4 +37,4 @@ const cropMasterSchema = new mongoose.Schema(
   { timestamps: true } // Automatically adds created_at and updated_at
 );
 
-module.exports = mongoose.model('CropMaster', cropMasterSchema);
+module.exports = mongoose.model("CropMaster", cropMasterSchema);

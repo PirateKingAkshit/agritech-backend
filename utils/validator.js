@@ -138,6 +138,15 @@ const validateUpdateCrop = [
   body('season').optional().trim().notEmpty().withMessage('Season cannot be empty'),
 ];
 
+const validateCreateProduct = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('skuCode').trim().notEmpty().withMessage('SKU Code is required'),
+  body('unit').trim().notEmpty().withMessage('Unit is required'),
+  body('price').trim().notEmpty().withMessage('Price is required'),
+  body('category').trim().notEmpty().withMessage('Category is required'),
+  body('description').trim().notEmpty().withMessage('Description is required'),
+]
+
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -161,5 +170,6 @@ module.exports = {
   validateOtpVerify,
   validateCreateCrop,
   validateUpdateCrop,
+  validateCreateProduct,
   handleValidationErrors,
 };
