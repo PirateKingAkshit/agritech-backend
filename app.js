@@ -8,6 +8,7 @@ const { errorMiddleware } = require('./middleware/errorMiddleware');
 const userRoutes = require('./routes/userRoutes');
 const cropMasterRoutes = require('./routes/cropMasterRoutes');
 const productMasterRoutes = require('./routes/productRoutes');
+const governmentSchemeRoutes = require('./routes/governmentSchemeRoutes');
 const logger = require('./utils/logger');
 
 const app = express();
@@ -33,6 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/crop-master', cropMasterRoutes);
 app.use('/api/v1/product-master', productMasterRoutes);
+app.use('/api/v1/government-scheme', governmentSchemeRoutes);
 
 // Health Check
 app.get('/api/v1/health', (req, res) => {

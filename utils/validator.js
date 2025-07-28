@@ -147,6 +147,31 @@ const validateCreateProduct = [
   body('description').trim().notEmpty().withMessage('Description is required'),
 ]
 
+const validateCreateScheme = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('translations')
+    .isArray({ min: 1 })
+    .withMessage('At least one translation is required'),
+  body('translations.*.name').trim().notEmpty().withMessage('Translation name is required'),
+  body('translations.*.language').trim().notEmpty().withMessage('Translation language is required'),
+  body('translations.*.description').optional().trim(),
+];
+
+const validateUpdateScheme = [
+  body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
+  body('translations')
+    .optional()
+    .isArray({ min: 1 })
+    .withMessage('At least one translation is required'),
+  body('translations.*.name').optional().trim().notEmpty().withMessage('Translation name cannot be empty'),
+  body('translations.*.language').optional().trim().notEmpty().withMessage('Translation language cannot be empty'),
+  body('translations.*.description').optional().trim(),
+  body('translations.*._id')
+    .optional()
+    .if(body('translations.*._id').exists())
+    .isMongoId()
+    .withMessage('Invalid translation ID'),
+];
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -171,5 +196,7 @@ module.exports = {
   validateCreateCrop,
   validateUpdateCrop,
   validateCreateProduct,
+  validateCreateScheme,
+  validateUpdateScheme,
   handleValidationErrors,
 };
