@@ -35,7 +35,8 @@ const getAllSchemes = asyncHandler(async (req, res) => {
 
 const getSchemeById = asyncHandler(async (req, res) => {
   const scheme = await getSchemeByIdService(req.params.schemeId);
-  res.status(200).json({ message: "Scheme fetched successfully", data: scheme });
+  const languageArray = scheme?.translation?.map(translation => translation.language);
+  res.status(200).json({ message: "Scheme fetched successfully", data: scheme, usedLanguageArray: languageArray });
 });
 
 const updateScheme = [
@@ -47,7 +48,7 @@ const updateScheme = [
       ? translations
       : JSON.parse(translations || "[]");
     const scheme = await updateSchemeService(req.params.id, { name, translations: parsedTranslations }, req.files, req.user);
-    res.status(200).json({ message: "Scheme updated successfully", data: scheme });
+    res.status(200).json({ message: "Scheme updated successfully", data: scheme});
   }),
 ];
 
