@@ -172,6 +172,16 @@ const validateUpdateScheme = [
     .isMongoId()
     .withMessage('Invalid translation ID'),
 ];
+
+const validateCreateMedia = [
+  body('type')
+    .trim()
+    .notEmpty()
+    .withMessage('Type is required')
+    .isIn(['video', 'audio', 'image', 'documents'])
+    .withMessage('Type must be one of: video, audio, image, documents'),
+];
+
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -198,5 +208,6 @@ module.exports = {
   validateCreateProduct,
   validateCreateScheme,
   validateUpdateScheme,
+  validateCreateMedia,
   handleValidationErrors,
 };
