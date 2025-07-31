@@ -11,11 +11,13 @@ const productMasterRoutes = require('./routes/productRoutes');
 const governmentSchemeRoutes = require('./routes/governmentSchemeRoutes');
 const mediaMasterRoutes = require('./routes/mediaMasterRoutes')
 const logger = require('./utils/logger');
+const mime = require('mime');
+const fs = require('fs');
 
 const app = express();
 
 // Security Middleware
-app.use(helmet());
+// app.use(helmet()); 
 app.use(cors({ origin: '*' }));
 app.use(
   rateLimit({
@@ -43,8 +45,52 @@ app.get('/api/v1/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Serve static files from the uploads directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.get('/uploads/:type/:filename', (req, res) => {
+  const { type, filename } = req.params;
+  const filePath = path.join(__dirname, 'uploads', type, filename);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('File not found');
+  }
+
+  const stat = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const mimeType = mime.getType(filePath) || 'application/octet-stream';
+
+  const range = req.headers.range;
+
+  // ✅ Set CORS and Range headers FIRST
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Accept-Ranges', 'bytes');
+
+  if (range) {
+    // Handle 206 Partial Content
+    const parts = range.replace(/bytes=/, '').split('-');
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+    const chunkSize = end - start + 1;
+    const stream = fs.createReadStream(filePath, { start, end });
+
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Content-Length': chunkSize,
+      'Content-Type': mimeType,
+      'Access-Control-Allow-Origin': '*', // ✅ Important again!
+    });
+
+    stream.pipe(res);
+  } else {
+    // Full file response
+    res.writeHead(200, {
+      'Content-Length': fileSize,
+      'Content-Type': mimeType,
+      'Access-Control-Allow-Origin': '*',
+    });
+
+    fs.createReadStream(filePath).pipe(res);
+  }
+});
 
 // Error Middleware
 app.use(errorMiddleware);

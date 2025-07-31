@@ -11,10 +11,13 @@ const createMediaService = async (files, type, requestUser) => {
   const baseUrl = `http://localhost:${process.env.PORT || 5000}`;
   
   for (const file of files) {
+    // Normalize the file path to use forward slashes for URLs
+    const normalizedPath = file.path.replace(/\\/g, '/');
+    
     const mediaData = {
       name: file.originalname, // Original filename
       type, // Type from req.body
-      url: `${baseUrl}/${file.path}`, // Full URL path (e.g., http://localhost:5000/uploads/media/unique-filename.ext)
+      url: `${baseUrl}/${normalizedPath}`, // Full URL path with normalized slashes
       format: file.mimetype, // MIME type (e.g., "image/jpeg")
       size: file.size, // Size in bytes
     };
