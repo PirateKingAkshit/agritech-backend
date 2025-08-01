@@ -195,6 +195,32 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
+const validateCreateTutorial = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('language').trim().notEmpty().withMessage('Language is required'),
+  body('description')
+    .notEmpty().withMessage('Description is required')
+    .custom((value) => {
+      if (/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi.test(value)) {
+        throw new Error('Description contains illegal <script> tags');
+      }
+      return true;
+    }),
+];
+
+const validateUpdateTutorial = [
+  body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
+  body('language').optional().trim().notEmpty().withMessage('Language cannot be empty'),
+  body('description')
+    .optional().notEmpty().withMessage('Description cannot be empty')
+    .custom((value) => {
+      if (value && /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi.test(value)) {
+        throw new Error('Description contains illegal <script> tags');
+      }
+      return true;
+    }),
+];
+
 
 module.exports = {
   validateUser,
@@ -209,5 +235,7 @@ module.exports = {
   validateCreateScheme,
   validateUpdateScheme,
   validateCreateMedia,
+  validateCreateTutorial,
+  validateUpdateTutorial,
   handleValidationErrors,
 };

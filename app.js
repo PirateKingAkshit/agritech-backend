@@ -10,6 +10,7 @@ const cropMasterRoutes = require('./routes/cropMasterRoutes');
 const productMasterRoutes = require('./routes/productRoutes');
 const governmentSchemeRoutes = require('./routes/governmentSchemeRoutes');
 const mediaMasterRoutes = require('./routes/mediaMasterRoutes')
+const tutorialsMasterRoutes = require('./routes/tutorialsMasterRoutes')
 const logger = require('./utils/logger');
 const mime = require('mime');
 const fs = require('fs');
@@ -39,6 +40,7 @@ app.use('/api/v1/crop-master', cropMasterRoutes);
 app.use('/api/v1/product-master', productMasterRoutes);
 app.use('/api/v1/government-scheme', governmentSchemeRoutes);
 app.use('/api/v1/media-master', mediaMasterRoutes)
+app.use('/api/v1/tutorials-master', tutorialsMasterRoutes)
 
 // Health Check
 app.get('/api/v1/health', (req, res) => {
