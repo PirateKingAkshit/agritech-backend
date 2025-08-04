@@ -244,7 +244,7 @@ const getAllUsers = async (page = 1, limit = 10, requestingUser, search) => {
     .select("-password -otp -otpExpires")
     .skip(skip)
     .limit(limit)
-    .sort({ created_at: -1 });
+    .sort({ createdAt: -1 });
 
   const totalPages = Math.ceil(count / limit);
 

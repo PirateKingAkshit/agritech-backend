@@ -44,7 +44,7 @@ const getAllMediaService = async (page, limit, search, type) => {
   const media = await MediaMaster.find(query)
     .skip(skip)
     .limit(limit)
-    .sort({ created_at: -1 });
+    .sort({ createdAt: -1 });
   const totalPages = Math.ceil(count / limit);
   return {
     data: media,

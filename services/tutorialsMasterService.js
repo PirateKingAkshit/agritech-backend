@@ -18,15 +18,15 @@ const getAllTutorialsService = async (page, limit, search) => {
     deleted_at: null,
     $or: [
       { name: { $regex: search, $options: "i" } },
-      { language: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
+      // { language: { $regex: search, $options: "i" } },
+      // { description: { $regex: search, $options: "i" } },
     ],
   };
   const count = await TutorialsMaster.countDocuments(query);
   const tutorials = await TutorialsMaster.find(query)
     .skip(skip)
     .limit(limit)
-    .sort({ created_at: -1 });
+    .sort({ createdAt: -1 });
 
   return {
     data: tutorials,

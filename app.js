@@ -40,7 +40,7 @@ app.use('/api/v1/crop-master', cropMasterRoutes);
 app.use('/api/v1/product-master', productMasterRoutes);
 app.use('/api/v1/government-scheme', governmentSchemeRoutes);
 app.use('/api/v1/media-master', mediaMasterRoutes)
-app.use('/api/v1/tutorials-master', tutorialsMasterRoutes)
+app.use('/api/v1/tutorial-master', tutorialsMasterRoutes)
 
 // Health Check
 app.get('/api/v1/health', (req, res) => {
