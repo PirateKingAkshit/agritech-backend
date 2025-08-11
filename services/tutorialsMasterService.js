@@ -34,6 +34,29 @@ const getAllTutorialsService = async (page, limit, search) => {
   };
 };
 
+const getActiveTutorialsPublicService = async (page, limit, search) => {
+  const skip = (page - 1) * limit;
+  const query = {
+    deleted_at: null,
+    isActive: true,
+    $or: [
+      { name: { $regex: search, $options: "i" } },
+      // { language: { $regex: search, $options: "i" } },
+      // { description: { $regex: search, $options: "i" } },
+    ],
+  };
+  const count = await TutorialsMaster.countDocuments(query);
+  const tutorials = await TutorialsMaster.find(query)
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 });
+
+  return {
+    data: tutorials,
+    pagination: { currentPage: page, totalPages: Math.ceil(count / limit), totalItems: count, limit },
+  };
+};
+
 const getTutorialByIdService = async (id) => {
   const tutorial = await TutorialsMaster.findOne({ _id: id, deleted_at: null });
   if (!tutorial) throw new Error("Tutorial not found", 404);
@@ -90,6 +113,7 @@ const enableTutorialService = async (id, requestUser) => {
 module.exports = {
   createTutorialService,
   getAllTutorialsService,
+  getActiveTutorialsPublicService,
   getTutorialByIdService,
   updateTutorialService,
   deleteTutorialService,

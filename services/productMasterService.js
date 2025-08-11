@@ -48,6 +48,29 @@ const getAllProductsService = async (page, limit, search) => {
   };
 };
 
+const getActiveProductsPublicService = async (page, limit, search) => {
+  const skip = (page - 1) * limit;
+  const baseFilter = {
+    deleted_at: null,
+    isActive: true,
+    $or: [
+      { name: { $regex: search, $options: "i" } },
+      { category: { $regex: search, $options: "i" } },
+      { skuCode: { $regex: search, $options: "i" } },
+    ],
+  };
+  const count = await ProductMaster.countDocuments(baseFilter);
+  const products = await ProductMaster.find(baseFilter)
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 });
+  const totalPages = Math.ceil(count / limit);
+  return {
+    data: products,
+    pagination: { currentPage: page, totalPages, totalItems: count, limit },
+  };
+};
+
 const getProductByIdService = async (id) => {
   const product = await ProductMaster.findOne({
     _id: id,
@@ -154,6 +177,7 @@ const enableProductService = async (id, requestUser) => {
 module.exports = {
   createProductService,
   getAllProductsService,
+  getActiveProductsPublicService,
   getProductByIdService,
   updateProductService,
   deleteProductService,

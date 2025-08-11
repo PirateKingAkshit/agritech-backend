@@ -5,6 +5,7 @@ const router = express.Router();
 const {
   createProduct,
   getAllProducts,
+  getActiveProductsPublic,
   getProductById,
   updateProduct,
   deleteProduct,
@@ -21,6 +22,8 @@ const upload = createMulterInstance({
 
 router.post("/", authMiddleware, upload.single("image"), createProduct);
 router.get("/", authMiddleware, getAllProducts);
+// Public: active products list (no auth)
+router.get("/public/active", getActiveProductsPublic);
 router.get("/:id", authMiddleware, getProductById);
 router.put("/:id", authMiddleware, upload.single("image"), updateProduct);
 router.delete("/:id", authMiddleware, deleteProduct);

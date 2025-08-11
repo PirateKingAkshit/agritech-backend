@@ -7,6 +7,7 @@ const {
 const {
   createSchemeService,
   getAllSchemesService,
+  getActiveSchemesPublicService,
   getSchemeByIdService,
   updateSchemeService,
   deleteSchemeService,
@@ -30,6 +31,12 @@ const createScheme = [
 const getAllSchemes = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, q = "" } = req.query;
   const result = await getAllSchemesService(parseInt(page), parseInt(limit), q);
+  res.status(200).json(result);
+});
+
+const getActiveSchemesPublic = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, q = "" } = req.query;
+  const result = await getActiveSchemesPublicService(parseInt(page), parseInt(limit), q);
   res.status(200).json(result);
 });
 
@@ -70,6 +77,7 @@ const enableScheme = asyncHandler(async (req, res) => {
 module.exports = {
   createScheme,
   getAllSchemes,
+  getActiveSchemesPublic,
   getSchemeById,
   updateScheme,
   deleteScheme,

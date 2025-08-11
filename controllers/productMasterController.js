@@ -6,6 +6,7 @@ const {
 const {
   createProductService,
   getAllProductsService,
+  getActiveProductsPublicService,
   getProductByIdService,
   updateProductService,
   deleteProductService,
@@ -31,6 +32,16 @@ const createProduct = [
 const getAllProducts = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, q = "" } = req.query;
   const result = await getAllProductsService(
+    parseInt(page),
+    parseInt(limit),
+    q
+  );
+  res.status(200).json(result);
+});
+
+const getActiveProductsPublic = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, q = "" } = req.query;
+  const result = await getActiveProductsPublicService(
     parseInt(page),
     parseInt(limit),
     q
@@ -84,6 +95,7 @@ const enableProduct = asyncHandler(async (req, res) => {
 module.exports = {
   createProduct,
   getAllProducts,
+  getActiveProductsPublic,
   getProductById,
   updateProduct,
   deleteProduct,

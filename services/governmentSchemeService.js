@@ -86,6 +86,30 @@ const getAllSchemesService = async (page, limit, search) => {
   };
 };
 
+const getActiveSchemesPublicService = async (page, limit, search) => {
+  const skip = (page - 1) * limit;
+  const baseFilter = {
+    deleted_at: null,
+    isActive: true,
+    $or: [
+      { name: { $regex: search, $options: "i" } },
+      { "translation.description": { $regex: search, $options: "i" } },
+      { "translation.language": { $regex: search, $options: "i" } },
+      { schemeId: { $regex: search, $options: "i" } },
+    ],
+  };
+  const count = await GovernmentScheme.countDocuments(baseFilter);
+  const schemes = await GovernmentScheme.find(baseFilter)
+    .skip(skip)
+    .limit(limit)
+    .sort({ createdAt: -1 });
+  const totalPages = Math.ceil(count / limit);
+  return {
+    data: schemes,
+    pagination: { currentPage: page, totalPages, totalItems: count, limit },
+  };
+};
+
 const getSchemeByIdService = async (schemeId) => {
   const scheme = await GovernmentScheme.findOne({
     schemeId,
@@ -256,6 +280,7 @@ const enableSchemeService = async (id, requestUser) => {
 module.exports = {
   createSchemeService,
   getAllSchemesService,
+  getActiveSchemesPublicService,
   getSchemeByIdService,
   updateSchemeService,
   deleteSchemeService,

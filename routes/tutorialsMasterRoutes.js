@@ -4,6 +4,7 @@ const { authMiddleware } = require("../middleware/authMiddleware");
 const {
   createTutorial,
   getAllTutorials,
+  getActiveTutorialsPublic,
   getTutorialById,
   updateTutorial,
   deleteTutorial,
@@ -13,6 +14,8 @@ const {
 
 router.post("/", authMiddleware, createTutorial);
 router.get("/", authMiddleware, getAllTutorials);
+// Public: active tutorials list (no auth)
+router.get("/public/active", getActiveTutorialsPublic);
 router.get("/:id", authMiddleware, getTutorialById);
 router.put("/:id", authMiddleware, updateTutorial);
 router.delete("/:id", authMiddleware, deleteTutorial);

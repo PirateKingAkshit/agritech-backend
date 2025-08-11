@@ -7,6 +7,7 @@ const {
 const {
   createCropService,
   getAllCropsService,
+  getActiveCropsPublicService,
   getCropByIdService,
   updateCropService,
   deleteCropService,
@@ -30,6 +31,12 @@ const createCrop = [
 const getAllCrops = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, q = "" } = req.query;
   const result = await getAllCropsService(parseInt(page), parseInt(limit), q);
+  res.status(200).json(result);
+});
+
+const getActiveCropsPublic = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, q = "" } = req.query;
+  const result = await getActiveCropsPublicService(parseInt(page), parseInt(limit), q);
   res.status(200).json(result);
 });
 
@@ -69,6 +76,7 @@ const enableCrop = asyncHandler(async (req, res) => {
 module.exports = {
   createCrop,
   getAllCrops,
+  getActiveCropsPublic,
   getCropById,
   updateCrop,
   deleteCrop,

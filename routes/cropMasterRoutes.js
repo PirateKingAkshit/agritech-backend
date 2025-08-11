@@ -4,6 +4,7 @@ const { authMiddleware } = require("../middleware/authMiddleware");
 const {
   createCrop,
   getAllCrops,
+  getActiveCropsPublic,
   getCropById,
   updateCrop,
   deleteCrop,
@@ -21,6 +22,8 @@ const upload = createMulterInstance({
 
 router.post("/", authMiddleware, upload.single("image"), createCrop);
 router.get("/", authMiddleware, getAllCrops);
+// Public: active crops list (no auth)
+router.get("/public/active", getActiveCropsPublic);
 router.get("/:id", authMiddleware, getCropById);
 router.put("/:id", authMiddleware, upload.single("image"), updateCrop);
 router.delete("/:id", authMiddleware, deleteCrop);
