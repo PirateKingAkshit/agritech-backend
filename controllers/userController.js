@@ -100,7 +100,7 @@ const registerSimpleUser = [
   asyncHandler(async (req, res) => {
     const { phone, location } = req.body;
     const result = await createSimpleUser({ phone, location });
-    res.status(201).json(result);
+    res.status(200).json(result);
   }),
 ];
 

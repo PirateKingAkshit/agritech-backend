@@ -305,6 +305,40 @@ const validateUpdateTutorial = [
     }),
 ];
 
+// Crop Sale Request Validators
+const validateCreateCropSaleRequest = [
+  body('cropId')
+    .notEmpty().withMessage('cropId is required')
+    .isMongoId().withMessage('Invalid cropId'),
+  body('quantity')
+    .notEmpty().withMessage('quantity is required')
+    .isFloat({ gt: 0 }).withMessage('quantity must be a number greater than 0')
+    .toFloat(),
+  body('quantity_unit')
+    .trim()
+    .notEmpty()
+    .withMessage('quantity_unit is required'),
+  body('price_per_unit')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('price_per_unit must be a number greater than 0')
+    .toFloat(),
+];
+
+const validateUpdateCropSaleRequestUser = [
+  body('status').not().exists().withMessage('Status cannot be updated in this route'),
+  body('cropId').not().exists().withMessage('cropId cannot be updated'),
+  body('quantity').optional({ checkFalsy: true }).isFloat({ gt: 0 }).withMessage('quantity must be a number greater than 0').toFloat(),
+  body('quantity_unit').optional({ checkFalsy: true }).trim().notEmpty().withMessage('quantity_unit cannot be empty'),
+  body('price_per_unit').optional({ checkFalsy: true }).isFloat({ gt: 0 }).withMessage('price_per_unit must be a number greater than 0').toFloat(),
+];
+
+const validateUpdateCropSaleRequestStatus = [
+  body('status')
+    .notEmpty().withMessage('status is required')
+    .isIn(['Pending', 'Approved', 'Rejected', 'Completed'])
+    .withMessage('Invalid status value'),
+];
+
 
 module.exports = {
   validateUser,
@@ -324,4 +358,7 @@ module.exports = {
   validateCreateTutorial,
   validateUpdateTutorial,
   handleValidationErrors,
+  validateCreateCropSaleRequest,
+  validateUpdateCropSaleRequestUser,
+  validateUpdateCropSaleRequestStatus,
 };
