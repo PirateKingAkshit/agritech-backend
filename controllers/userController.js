@@ -6,6 +6,8 @@ const {
   validatePagination,
   validateOtpGenerate,
   validateOtpVerify,
+  validateSimpleRegistration,
+  validateSimpleUserUpdate,
   handleValidationErrors,
 } = require("../utils/validator");
 const {
@@ -13,6 +15,8 @@ const {
   verifyOtp,
   resendOtp,
   createUser,
+  createSimpleUser,
+  updateSimpleUser,
   loginUserAdmin,
   getUserById,
   getAllUsers: getAllUsersService,
@@ -87,6 +91,26 @@ const registerUser = [
       message: "User registered successfully",
       data: { id: user._id, phone, email, role: user.role },
     });
+  }),
+];
+
+const registerSimpleUser = [
+  validateSimpleRegistration,
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const { phone, location } = req.body;
+    const result = await createSimpleUser({ phone, location });
+    res.status(201).json(result);
+  }),
+];
+
+const updateSimpleUserProfile = [
+  validateSimpleUserUpdate,
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const result = await updateSimpleUser(id, req.body);
+    res.status(200).json(result);
   }),
 ];
 
@@ -185,6 +209,8 @@ module.exports = {
   verifyOtpHandler,
   resendOtpHandler,
   registerUser,
+  registerSimpleUser,
+  updateSimpleUserProfile,
   loginUser,
   getUserProfile,
   getAllUsers,

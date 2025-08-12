@@ -158,6 +158,104 @@ const createUser = async ({
   }; // Return OTP for testing
 };
 
+const createSimpleUser = async ({ phone, location }) => {
+  // Check if user already exists
+  const existingUser = await User.findOne({ phone, deleted_at: null });
+  if (existingUser) {
+    throw new Error("User already exists with this phone number", 400);
+  }
+
+  // Generate OTP for verification
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
+
+  const user = new User({
+    phone,
+    otp,
+    otpExpires,
+    location,
+    role: "User",
+    isActive: true,
+  });
+
+  await user.save();
+  logger.info(`Simple user registration: ${phone}`);
+  
+  return {
+    message: "User registered successfully. Please verify your phone number with OTP.",
+    data: { 
+      id: user._id, 
+      phone, 
+      role: user.role,
+      requiresOtpVerification: true 
+    },
+    otp, // Return OTP for testing; in production, send via SMS
+  };
+};
+
+const updateSimpleUser = async (userId, updates) => {
+  // Check if user exists
+  const user = await User.findOne({ _id: userId, deleted_at: null });
+  if (!user) {
+    throw new Error("User not found", 404);
+  }
+
+  // Define allowed fields for simple user updates
+  const allowedUpdates = [
+    "first_name",
+    "last_name",
+    "email",
+    "location",
+    "state",
+    "city",
+    "address",
+  ];
+
+  // Filter out invalid fields
+  const validUpdates = {};
+  Object.keys(updates).forEach(key => {
+    if (allowedUpdates.includes(key) && updates[key] !== undefined && updates[key] !== null) {
+      validUpdates[key] = updates[key];
+    }
+  });
+
+  // Check if email is being updated and if it's already taken by another user
+  if (validUpdates.email && validUpdates.email !== user.email) {
+    const existingUserWithEmail = await User.findOne({ 
+      email: validUpdates.email, 
+      _id: { $ne: userId }, 
+      deleted_at: null 
+    });
+    if (existingUserWithEmail) {
+      throw new Error("Email is already taken by another user", 400);
+    }
+  }
+
+  // Apply updates
+  Object.keys(validUpdates).forEach(key => {
+    user[key] = validUpdates[key];
+  });
+
+  await user.save();
+  logger.info(`Simple user updated: ${user.phone}`);
+  
+  return {
+    message: "User updated successfully",
+    data: {
+      id: user._id,
+      phone: user.phone,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      location: user.location,
+      state: user.state,
+      city: user.city,
+      address: user.address,
+      role: user.role,
+    },
+  };
+};
+
 const loginUserAdmin = async ({ email, password }, { ipAddress }) => {
   const user = await User.findOne({ email, deleted_at: null }).select(
     "+password"
@@ -365,6 +463,8 @@ module.exports = {
   verifyOtp,
   resendOtp,
   createUser,
+  createSimpleUser,
+  updateSimpleUser,
   loginUserAdmin,
   getUserById,
   getAllUsers,

@@ -122,6 +122,90 @@ const validateOtpVerify = [
     .withMessage('OTP must be a 6-digit number'),
 ];
 
+const validateSimpleRegistration = [
+  body('phone')
+    .trim()
+    .notEmpty()
+    .withMessage('Phone number is required')
+    .matches(/^\+?[1-9]\d{1,14}$/)
+    .withMessage('Invalid phone number format'),
+  
+  body('location.lat')
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      if (value && (isNaN(value) || value < -90 || value > 90)) {
+        throw new Error('Latitude must be between -90 and 90');
+      }
+      return true;
+    }),
+
+  body('location.long')
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      if (value && (isNaN(value) || value < -180 || value > 180)) {
+        throw new Error('Longitude must be between -180 and 180');
+      }
+      return true;
+    }),
+];
+
+const validateSimpleUserUpdate = [
+  body('first_name')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('First name must be between 1 and 50 characters'),
+  
+  body('last_name')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Last name must be between 1 and 50 characters'),
+  
+  body('email')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isEmail()
+    .normalizeEmail()
+    .withMessage('Invalid email format'),
+  
+  body('state')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('State must be between 1 and 100 characters'),
+  
+  body('city')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('City must be between 1 and 100 characters'),
+  
+  body('address')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ min: 1, max: 500 })
+    .withMessage('Address must be between 1 and 500 characters'),
+  
+  body('location.lat')
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      if (value && (isNaN(value) || value < -90 || value > 90)) {
+        throw new Error('Latitude must be between -90 and 90');
+      }
+      return true;
+    }),
+
+  body('location.long')
+    .optional({ checkFalsy: true })
+    .custom((value) => {
+      if (value && (isNaN(value) || value < -180 || value > 180)) {
+        throw new Error('Longitude must be between -180 and 180');
+      }
+      return true;
+    }),
+];
+
 const validateCreateCrop = [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('category').trim().notEmpty().withMessage('Category is required'),
@@ -229,6 +313,8 @@ module.exports = {
   validatePagination,
   validateOtpGenerate,
   validateOtpVerify,
+  validateSimpleRegistration,
+  validateSimpleUserUpdate,
   validateCreateCrop,
   validateUpdateCrop,
   validateCreateProduct,

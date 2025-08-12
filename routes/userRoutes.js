@@ -5,6 +5,8 @@ const {
   verifyOtpHandler,
   resendOtpHandler,
   registerUser,
+  registerSimpleUser,
+  updateSimpleUserProfile,
   loginUser,
   getUserProfile,
   getAllUsers,
@@ -23,6 +25,8 @@ router.post("/otp/generate", generateOtpHandler);
 router.post("/otp/verify", verifyOtpHandler);
 router.post("/otp/resend", resendOtpHandler);
 router.post("/register", authMiddleware, registerUser);
+router.post("/register-user", registerSimpleUser);
+router.put("/update-user/:id", authMiddleware, updateSimpleUserProfile);
 router.post("/login", loginUser);
 router.get("/profile", authMiddleware, getUserProfile);
 router.get("/", authMiddleware, getAllUsers);
