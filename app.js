@@ -20,12 +20,12 @@ const app = express();
 // Security Middleware
 // app.use(helmet()); 
 app.use(cors({ origin: '*' }));
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100000, // Limit each IP to 100 requests
-  })
-);
+// app.use(
+//   rateLimit({
+//     windowMs: 15 * 60 * 1000, // 15 minutes
+//     max: 100000, // Limit each IP to 100 requests
+//   })
+// );
 
 // Logging Middleware
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
