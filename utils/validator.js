@@ -339,6 +339,58 @@ const validateUpdateCropSaleRequestStatus = [
     .withMessage('Invalid status value'),
 ];
 
+// Product Order Validators
+const validateCreateProductOrder = [
+  body('products')
+    .isArray({ min: 1 })
+    .withMessage('products must be a non-empty array'),
+  body('products.*.productId')
+    .notEmpty().withMessage('productId is required')
+    .isMongoId().withMessage('Invalid productId'),
+  body('products.*.quantity')
+    .notEmpty().withMessage('quantity is required')
+    .isFloat({ gt: 0 }).withMessage('quantity must be a number greater than 0')
+    .toFloat(),
+  body('products.*.pricePerUnit')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('pricePerUnit must be > 0')
+    .toFloat(),
+  body('totalPrice')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('totalPrice must be > 0')
+    .toFloat(),
+];
+
+const validateUpdateProductOrderUser = [
+  body('status').not().exists().withMessage('status cannot be updated by user'),
+  body('products')
+    .optional({ checkFalsy: true })
+    .isArray({ min: 1 })
+    .withMessage('products must be a non-empty array'),
+  body('products.*.productId')
+    .optional({ checkFalsy: true })
+    .isMongoId().withMessage('Invalid productId'),
+  body('products.*.quantity')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('quantity must be a number greater than 0')
+    .toFloat(),
+  body('products.*.pricePerUnit')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('pricePerUnit must be > 0')
+    .toFloat(),
+  body('totalPrice')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('totalPrice must be > 0')
+    .toFloat(),
+];
+
+const validateUpdateProductOrderStatus = [
+  body('status')
+    .notEmpty().withMessage('status is required')
+    .isIn(['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'])
+    .withMessage('Invalid status value'),
+];
+
 
 module.exports = {
   validateUser,
@@ -361,4 +413,7 @@ module.exports = {
   validateCreateCropSaleRequest,
   validateUpdateCropSaleRequestUser,
   validateUpdateCropSaleRequestStatus,
+  validateCreateProductOrder,
+  validateUpdateProductOrderUser,
+  validateUpdateProductOrderStatus,
 };
