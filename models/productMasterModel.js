@@ -7,7 +7,7 @@ const productMasterSchema = new mongoose.Schema(
       required: [true, "Product name is required"],
       trim: true,
       unique: true,
-    },
+    }, 
     skuCode: {
       type: String,
       trim: true,
