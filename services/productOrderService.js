@@ -1,0 +1,197 @@
+const ProductOrder = require("../models/productOrderModel");
+const ProductMaster = require("../models/productMasterModel");
+const Error = require("../utils/error");
+
+function generateOrderId() {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mi = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `PO-${yyyy}${mm}${dd}-${hh}${mi}${ss}-${rand}`;
+}
+
+const createOrderService = async (payload, requestingUser) => {
+  if (!requestingUser?.id) {
+    throw new Error("Unauthorized", 401);
+  }
+
+  if (!Array.isArray(payload.products) || payload.products.length === 0) {
+    throw new Error("At least one product is required", 400);
+  }
+
+  // Build products array with price lookups and subtotal/total computations
+  const productsDetailed = [];
+  let computedTotal = 0;
+
+  for (const item of payload.products) {
+    const product = await ProductMaster.findOne({ _id: item.productId, deleted_at: null, isActive: true });
+    if (!product) {
+      throw new Error("Invalid product in order", 400);
+    }
+    const pricePerUnit = Number(item.pricePerUnit ?? product.price);
+    const quantity = Number(item.quantity);
+    if (!(quantity > 0)) {
+      throw new Error("Quantity must be greater than 0", 400);
+    }
+    const subTotal = pricePerUnit * quantity;
+    computedTotal += subTotal;
+    productsDetailed.push({
+      productId: product._id,
+      quantity,
+      pricePerUnit,
+      subTotal,
+    });
+  }
+
+  const totalPrice = Number(payload.totalPrice ?? computedTotal);
+
+  const order = new ProductOrder({
+    orderId: generateOrderId(),
+    userId: requestingUser.id,
+    products: productsDetailed,
+    totalPrice,
+  });
+  await order.save();
+  return order;
+};
+
+const getMyOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
+  if (!requestingUser?.id) {
+    throw new Error("Unauthorized", 401);
+  }
+  const skip = (page - 1) * limit;
+  const filter = {
+    deleted_at: null,
+    userId: requestingUser.id,
+    ...(status ? { status } : {}),
+    $or: q ? [{ orderId: { $regex: q, $options: "i" } }] : [{}],
+  };
+  const count = await ProductOrder.countDocuments(filter);
+  const data = await ProductOrder.find(filter)
+    .populate("products.productId", "name category price")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+  return {
+    data,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(count / limit),
+      totalItems: count,
+      limit,
+    },
+  };
+};
+
+const getAllOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
+  if (requestingUser.role !== "Admin") {
+    throw new Error("Unauthorized", 403);
+  }
+  const skip = (page - 1) * limit;
+  const filter = {
+    deleted_at: null,
+    ...(status ? { status } : {}),
+    $or: q ? [{ orderId: { $regex: q, $options: "i" } }] : [{}],
+  };
+  const count = await ProductOrder.countDocuments(filter);
+  const data = await ProductOrder.find(filter)
+    .populate("userId", "first_name last_name phone")
+    .populate("products.productId", "name category price")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+  return {
+    data,
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(count / limit),
+      totalItems: count,
+      limit,
+    },
+  };
+};
+
+const getOrderByIdService = async (id, requestingUser) => {
+  const order = await ProductOrder.findOne({ _id: id, deleted_at: null })
+    .populate("userId", "first_name last_name phone role")
+    .populate("products.productId", "name category price");
+  if (!order) {
+    throw new Error("Order not found", 404);
+  }
+  if (requestingUser.role !== "Admin" && String(order.userId._id) !== String(requestingUser.id)) {
+    throw new Error("Unauthorized to access this order", 403);
+  }
+  return order;
+};
+
+const updateOrderUserService = async (id, updates, requestingUser) => {
+  const order = await ProductOrder.findOne({ _id: id, deleted_at: null });
+  if (!order) {
+    throw new Error("Order not found", 404);
+  }
+  if (String(order.userId) !== String(requestingUser.id)) {
+    throw new Error("Unauthorized to update this order", 403);
+  }
+  // Allow user to update products only when status is Pending
+  if (order.status !== "Pending") {
+    throw new Error("Order cannot be edited once processing started", 400);
+  }
+  if (updates.products) {
+    if (!Array.isArray(updates.products) || updates.products.length === 0) {
+      throw new Error("products must be a non-empty array", 400);
+    }
+    const productsDetailed = [];
+    let computedTotal = 0;
+    for (const item of updates.products) {
+      const product = await ProductMaster.findOne({ _id: item.productId, deleted_at: null, isActive: true });
+      if (!product) {
+        throw new Error("Invalid product in order", 400);
+      }
+      const pricePerUnit = Number(item.pricePerUnit ?? product.price);
+      const quantity = Number(item.quantity);
+      if (!(quantity > 0)) {
+        throw new Error("Quantity must be greater than 0", 400);
+      }
+      const subTotal = pricePerUnit * quantity;
+      computedTotal += subTotal;
+      productsDetailed.push({ productId: product._id, quantity, pricePerUnit, subTotal });
+    }
+    order.products = productsDetailed;
+    order.totalPrice = Number(updates.totalPrice ?? computedTotal);
+  }
+  await order.save();
+  return order;
+};
+
+const updateOrderStatusService = async (id, updates, requestingUser) => {
+  if (requestingUser.role !== "Admin") {
+    throw new Error("Unauthorized", 403);
+  }
+  const order = await ProductOrder.findOne({ _id: id, deleted_at: null });
+  if (!order) {
+    throw new Error("Order not found", 404);
+  }
+  const allowedUpdates = ["status"];
+  Object.keys(updates || {}).forEach((key) => {
+    if (allowedUpdates.includes(key)) {
+      order[key] = updates[key];
+    }
+  });
+  await order.save();
+  return order;
+};
+
+module.exports = {
+  createOrderService,
+  getMyOrdersService,
+  getAllOrdersService,
+  getOrderByIdService,
+  updateOrderUserService,
+  updateOrderStatusService,
+};
+
+

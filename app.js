@@ -12,6 +12,7 @@ const governmentSchemeRoutes = require('./routes/governmentSchemeRoutes');
 const mediaMasterRoutes = require('./routes/mediaMasterRoutes')
 const tutorialsMasterRoutes = require('./routes/tutorialsMasterRoutes')
 const cropSaleRequestRoutes = require('./routes/cropSaleRequestRoutes')
+const productOrderRoutes = require('./routes/productOrderRoutes')
 const dashboardRoutes = require('./routes/dashboardRoutes')
 const logger = require('./utils/logger');
 const mime = require('mime');
@@ -46,6 +47,7 @@ app.use('/api/v1/government-scheme', governmentSchemeRoutes);
 app.use('/api/v1/media-master', mediaMasterRoutes)
 app.use('/api/v1/tutorial-master', tutorialsMasterRoutes)
 app.use('/api/v1/crop-sale-requests', cropSaleRequestRoutes)
+app.use('/api/v1/product-orders', productOrderRoutes)
 app.use('/api/v1/dashboard', dashboardRoutes)
 
 // Health Check
