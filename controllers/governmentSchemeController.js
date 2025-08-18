@@ -36,7 +36,8 @@ const getAllSchemes = asyncHandler(async (req, res) => {
 
 const getActiveSchemesPublic = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, q = "" } = req.query;
-  const result = await getActiveSchemesPublicService(parseInt(page), parseInt(limit), q);
+  const { lang } = req.params;
+  const result = await getActiveSchemesPublicService(parseInt(page), parseInt(limit), q, lang);
   res.status(200).json(result);
 });
 

@@ -86,24 +86,71 @@ const getAllSchemesService = async (page, limit, search) => {
   };
 };
 
-const getActiveSchemesPublicService = async (page, limit, search) => {
+const getActiveSchemesPublicService = async (page, limit, search, lang) => {
   const skip = (page - 1) * limit;
-  const baseFilter = {
-    deleted_at: null,
-    isActive: true,
-    $or: [
-      { name: { $regex: search, $options: "i" } },
-      { "translation.description": { $regex: search, $options: "i" } },
-      { "translation.language": { $regex: search, $options: "i" } },
-      { schemeId: { $regex: search, $options: "i" } },
-    ],
-  };
-  const count = await GovernmentScheme.countDocuments(baseFilter);
-  const schemes = await GovernmentScheme.find(baseFilter)
-    .skip(skip)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+
+  const pipeline = [
+    {
+      $match: {
+        deleted_at: null,
+        isActive: true,
+      },
+    },
+    {
+      // Keep only translations that match the requested lang
+      $project: {
+        schemeId: 1,
+        translation: {
+          $filter: {
+            input: "$translation",
+            as: "t",
+            cond: { $eq: ["$$t.language", lang] },
+          },
+        },
+      },
+    },
+    {
+      // Flatten fields from translation
+      $project: {
+        schemeId: 1,
+        name: { $arrayElemAt: ["$translation.name", 0] },
+        image: { $arrayElemAt: ["$translation.image", 0] },
+        description: { $arrayElemAt: ["$translation.description", 0] },
+        language: { $arrayElemAt: ["$translation.language", 0] },
+      },
+    },
+    {
+      // Remove docs where translation didn't exist
+      $match: { language: lang },
+    },
+  ];
+
+  // Apply search strictly on lang-specific fields
+  if (search && search.trim() !== "") {
+    pipeline.push({
+      $match: {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { description: { $regex: search, $options: "i" } },
+          { schemeId: { $regex: search, $options: "i" } },
+        ],
+      },
+    });
+  }
+
+  // Count docs
+  const countPipeline = [...pipeline, { $count: "total" }];
+  const countResult = await GovernmentScheme.aggregate(countPipeline);
+  const count = countResult.length > 0 ? countResult[0].total : 0;
+
+  // Apply pagination
+  pipeline.push({ $sort: { createdAt: -1 } });
+  pipeline.push({ $skip: skip });
+  pipeline.push({ $limit: limit });
+
+  const schemes = await GovernmentScheme.aggregate(pipeline);
   const totalPages = Math.ceil(count / limit);
+
   return {
     data: schemes,
     pagination: { currentPage: page, totalPages, totalItems: count, limit },

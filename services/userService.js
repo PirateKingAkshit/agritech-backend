@@ -4,6 +4,8 @@ const User = require("../models/User");
 const LoginHistory = require("../models/LoginHistory");
 const logger = require("../utils/logger");
 const Error = require("../utils/error");
+const fs = require("fs").promises;
+const path = require("path");
 
 const generateOtp = async (phone) => {
   const user = await User.findOne({ phone, deleted_at: null }).select(
@@ -118,14 +120,21 @@ const createUser = async ({
   city,
   address,
   role,
+  image
 }) => {
-  let existingUser;
-  if (role === "Admin") {
-    existingUser = await User.findOne({ email, deleted_at: null });
-  }
-  if (role === "User") {
-    existingUser = await User.findOne({ phone, deleted_at: null });
-  }
+  const existingUser = await User.findOne({
+  deleted_at: null,  // check only active users
+  $or: [
+    { phone },
+    { email }
+  ]
+});
+  // if (role === "Admin") {
+  //   existingUser = await User.findOne({ email, deleted_at: null });
+  // }
+  // if (role === "User") {
+  //   existingUser = await User.findOne({ phone, deleted_at: null });
+  // }
   if (existingUser) {
     throw new Error("User already exists with this phone or email", 400);
   }
@@ -148,6 +157,7 @@ const createUser = async ({
     address,
     role: role || "User",
     isActive: true,
+    image : image || ""
   });
 
   await user.save();
@@ -209,6 +219,7 @@ const updateSimpleUser = async (userId, updates) => {
     "state",
     "city",
     "address",
+    "image"
   ];
 
   // Filter out invalid fields
@@ -228,6 +239,14 @@ const updateSimpleUser = async (userId, updates) => {
     });
     if (existingUserWithEmail) {
       throw new Error("Email is already taken by another user", 400);
+    }
+  }
+
+  if (updates.image && user.image) {
+    try {
+      await fs.unlink(path.resolve(__dirname, "../", user.image));
+    } catch (error) {
+      console.error(`Failed to delete old image: ${user.image}`, error);
     }
   }
 
@@ -363,7 +382,6 @@ const updateUser = async (userId, updates, requestingUser) => {
   if (requestingUser.role !== "Admin" && requestingUser.id !== userId) {
     throw new Error("Unauthorized to update this user", 403);
   }
-
   const allowedUpdates = [
     "first_name",
     "last_name",
@@ -374,6 +392,7 @@ const updateUser = async (userId, updates, requestingUser) => {
     "city",
     "address",
     "role",
+    "image"
   ];
   const updateKeys = Object.keys(updates);
   const isValidUpdate = updateKeys.every((key) => allowedUpdates.includes(key));
@@ -386,6 +405,14 @@ const updateUser = async (userId, updates, requestingUser) => {
   );
   if (!user) {
     throw new Error("User not found", 404);
+  }
+
+  if (updates.image && user.image) {
+    try {
+      await fs.unlink(path.resolve(__dirname, "../", user.image));
+    } catch (error) {
+      console.error(`Failed to delete old image: ${user.image}`, error);
+    }
   }
 
   updateKeys.forEach((key) => {

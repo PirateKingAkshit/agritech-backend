@@ -74,6 +74,7 @@ const registerUser = [
       address,
       role,
     } = req.body;
+    console.log("req.file", req.file)
     const user = await createUser({
       phone,
       email,
@@ -86,6 +87,7 @@ const registerUser = [
       city,
       address,
       role,
+      image: req.file ? req.file.path : "",
     });
     res.status(200).json({
       message: "User registered successfully",
@@ -109,7 +111,11 @@ const updateSimpleUserProfile = [
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    const result = await updateSimpleUser(id, req.body);
+    let updates = { ...req.body};
+    if (req.file) {
+      updates.image = req.file.path;
+    }
+    const result = await updateSimpleUser(id, updates);
     res.status(200).json(result);
   }),
 ];
@@ -164,7 +170,12 @@ const updateUserDetails = [
   validateUserId,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const user = await updateUser(req.params.id, req.body, req.user);
+    let updates = {...req.body};
+    if (req.file) {
+      updates.image = req.file.path;
+    }
+    delete updates.password
+    const user = await updateUser(req.params.id, updates, req.user);
     res.status(200).json({ message: "User updated successfully", data: user });
   }),
 ];

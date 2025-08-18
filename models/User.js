@@ -28,6 +28,9 @@ const userSchema = new mongoose.Schema(
       type: String,
       select: false,
     },
+    image: {
+      type: String,
+    },
     otp: {
       type: String,
       select: false,
@@ -81,6 +84,15 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-userSchema.index({ phone: 1, deleted_at: 1 }, { unique: true });  //unique index for phone and deleted_at
+userSchema.index(
+  { phone: 1 },
+  { unique: true, partialFilterExpression: { deleted_at: null } }
+);
+
+// Ensure email is unique only if not deleted
+userSchema.index(
+  { email: 1 },
+  { unique: true, partialFilterExpression: { deleted_at: null } }
+);
 
 module.exports = mongoose.model("User", userSchema);

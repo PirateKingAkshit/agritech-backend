@@ -18,6 +18,9 @@ const tutorialsMasterSchema = new mongoose.Schema(
       required: [true, "Language is required"],
       trim: true,
     },
+    image: {
+      type: String,
+    },
     isActive: {
       type: Boolean,
       default: true,

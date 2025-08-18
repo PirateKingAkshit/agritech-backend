@@ -16,12 +16,14 @@ const dashboardRoutes = require('./routes/dashboardRoutes')
 const logger = require('./utils/logger');
 const mime = require('mime');
 const fs = require('fs');
+const dotenv = require('dotenv')
+dotenv.config();
 
 const app = express();
 
 // Security Middleware
 // app.use(helmet()); 
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 // app.use(
 //   rateLimit({
 //     windowMs: 15 * 60 * 1000, // 15 minutes

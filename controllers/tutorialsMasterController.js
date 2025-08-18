@@ -19,7 +19,11 @@ const createTutorial = [
   validateCreateTutorial,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const tutorial = await createTutorialService(req.body, req.user);
+    let data = { ...req.body};
+    if (req.file) {
+      data.image = req.file.path
+    }
+    const tutorial = await createTutorialService(data, req.user);
     res.status(200).json({ message: "Tutorial created successfully", data: tutorial });
   }),
 ];
@@ -32,7 +36,8 @@ const getAllTutorials = asyncHandler(async (req, res) => {
 
 const getActiveTutorialsPublic = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, q = "" } = req.query;
-  const result = await getActiveTutorialsPublicService(parseInt(page), parseInt(limit), q);
+  const { lang } = req.params;
+  const result = await getActiveTutorialsPublicService(parseInt(page), parseInt(limit), q, lang );
   res.status(200).json(result);
 });
 
@@ -45,7 +50,11 @@ const updateTutorial = [
   validateUpdateTutorial,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const tutorial = await updateTutorialService(req.params.id, req.body, req.user);
+    let data = { ...req.body};
+    if (req.file) {
+      data.image = req.file.path
+    }
+    const tutorial = await updateTutorialService(req.params.id, data, req.user);
     res.status(200).json({ message: "Tutorial updated successfully", data: tutorial });
   }),
 ];

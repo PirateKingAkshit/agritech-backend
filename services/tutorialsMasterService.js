@@ -1,5 +1,7 @@
 const TutorialsMaster = require("../models/tutorialsMasterModel");
 const Error = require("../utils/error");
+const fs = require("fs").promises;
+const path = require("path");
 
 const createTutorialService = async (data, requestUser) => {
   if (requestUser.role !== "Admin") throw new Error("Unauthorized", 403);
@@ -34,14 +36,14 @@ const getAllTutorialsService = async (page, limit, search) => {
   };
 };
 
-const getActiveTutorialsPublicService = async (page, limit, search) => {
+const getActiveTutorialsPublicService = async (page, limit, search, lang) => {
   const skip = (page - 1) * limit;
   const query = {
     deleted_at: null,
     isActive: true,
     $or: [
-      { name: { $regex: search, $options: "i" } },
-      // { language: { $regex: search, $options: "i" } },
+      // { name: { $regex: search, $options: "i" } },
+      { language: { $regex: lang, $options: "i" } },
       // { description: { $regex: search, $options: "i" } },
     ],
   };
@@ -73,6 +75,14 @@ const updateTutorialService = async (id, updates, requestUser) => {
   }
   const tutorial = await TutorialsMaster.findOne({ _id: id, deleted_at: null });
   if (!tutorial) throw new Error("Tutorial not found", 404);
+
+  if (updates.image && tutorial.image) {
+      try {
+        await fs.unlink(path.resolve(__dirname, "../", tutorial.image));
+      } catch (error) {
+        console.error(`Failed to delete old image: ${user.image}`, error);
+      }
+    }
 
   Object.assign(tutorial, updates);
   await tutorial.save();
