@@ -85,8 +85,6 @@ const registerUser = [
         }
       }
 
-      console.log("req.file", req.file);
-
       const user = await createUser({
         phone,
         email,
@@ -94,7 +92,7 @@ const registerUser = [
         otp,
         first_name,
         last_name,
-        location, // now parsed properly
+        location,
         state,
         city,
         address,
