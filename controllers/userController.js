@@ -61,38 +61,55 @@ const registerUser = [
   validateUser,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const {
-      phone,
-      email,
-      password,
-      otp,
-      first_name,
-      last_name,
-      location,
-      state,
-      city,
-      address,
-      role,
-    } = req.body;
-    console.log("req.file", req.file)
-    const user = await createUser({
-      phone,
-      email,
-      password,
-      otp,
-      first_name,
-      last_name,
-      location,
-      state,
-      city,
-      address,
-      role,
-      image: req.file ? req.file.path : "",
-    });
-    res.status(200).json({
-      message: "User registered successfully",
-      data: { id: user._id, phone, email, role: user.role },
-    });
+    try {
+      let {
+        phone,
+        email,
+        password,
+        otp,
+        first_name,
+        last_name,
+        location,
+        state,
+        city,
+        address,
+        role,
+      } = req.body;
+
+      // ✅ Parse location if it's a JSON string
+      if (location && typeof location === "string") {
+        try {
+          location = JSON.parse(location);
+        } catch (err) {
+          console.error("Invalid location JSON:", location);
+        }
+      }
+
+      console.log("req.file", req.file);
+
+      const user = await createUser({
+        phone,
+        email,
+        password,
+        otp,
+        first_name,
+        last_name,
+        location, // now parsed properly
+        state,
+        city,
+        address,
+        role,
+        image: req.file ? req.file.path : "",
+      });
+
+      res.status(200).json({
+        message: "User registered successfully",
+        data: { id: user._id, phone, email, role: user.role },
+      });
+    } catch (error) {
+      console.error("Register error:", error);
+      res.status(500).json({ error: { message: "Internal server error" } });
+    }
   }),
 ];
 
@@ -111,7 +128,7 @@ const updateSimpleUserProfile = [
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
-    let updates = { ...req.body};
+    let updates = { ...req.body };
     if (req.file) {
       updates.image = req.file.path;
     }
@@ -170,15 +187,35 @@ const updateUserDetails = [
   validateUserId,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    let updates = {...req.body};
+    let updates = { ...req.body };
+
+    // ✅ Parse location if it’s a JSON string
+    if (updates.location && typeof updates.location === "string") {
+      try {
+        updates.location = JSON.parse(updates.location);
+      } catch (err) {
+        console.error("Invalid location JSON in update:", updates.location);
+        return res.status(400).json({ error: { message: "Invalid location format" } });
+      }
+    }
+
+    // ✅ Handle file upload
     if (req.file) {
       updates.image = req.file.path;
     }
-    delete updates.password
+
+    // ✅ Prevent password updates here
+    delete updates.password;
+
     const user = await updateUser(req.params.id, updates, req.user);
-    res.status(200).json({ message: "User updated successfully", data: user });
+
+    res.status(200).json({
+      message: "User updated successfully",
+      data: user,
+    });
   }),
 ];
+
 
 const deleteUserAccount = [
   validateUserId,
