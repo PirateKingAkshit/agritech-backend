@@ -392,14 +392,17 @@ const updateUser = async (userId, updates, requestingUser) => {
     "city",
     "address",
     "role",
-    "image"
+    "image",
+    "createdAt",
+    "updatedAt"
   ];
+  console.log("Updates received:", updates);
   const updateKeys = Object.keys(updates);
   const isValidUpdate = updateKeys.every((key) => allowedUpdates.includes(key));
+
   if (!isValidUpdate) {
     throw new Error("Invalid update fields", 400);
   }
-
   const user = await User.findOne({ _id: userId, deleted_at: null }).select(
     "+password +otp +otpExpires"
   );

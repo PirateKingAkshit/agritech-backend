@@ -80,7 +80,7 @@ const updateTutorialService = async (id, updates, requestUser) => {
       try {
         await fs.unlink(path.resolve(__dirname, "../", tutorial.image));
       } catch (error) {
-        console.error(`Failed to delete old image: ${user.image}`, error);
+        console.error(`Failed to delete old image: ${tutorial.image}`, error);
       }
     }
 
