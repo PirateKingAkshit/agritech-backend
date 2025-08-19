@@ -1,3 +1,4 @@
+// productOrderModel.js
 const mongoose = require("mongoose");
 
 const productOrderSchema = new mongoose.Schema(
@@ -5,8 +6,8 @@ const productOrderSchema = new mongoose.Schema(
     orderId: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
+      index: true,
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -14,40 +15,32 @@ const productOrderSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    products: [
-      {
-        productId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "ProductMaster",
-          required: true,
-        },
-        quantity: {
-          type: Number,
-          required: true,
-          min: [0, "Quantity must be non-negative"],
-        },
-        pricePerUnit: {
-          type: Number,
-          required: true,
-          min: [0, "Price per unit must be non-negative"],
-        },
-        subTotal: {
-          type: Number,
-          required: true,
-          min: [0, "Subtotal must be non-negative"],
-        },
-      },
-    ],
-    totalPrice: {
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ProductMaster",
+      required: true,
+      index: true,
+    },
+    quantity: {
       type: Number,
       required: true,
-      min: [0, "Total price must be non-negative"],
+      min: [0, "Quantity must be non-negative"],
     },
     status: {
       type: String,
       enum: ["Pending", "Confirmed", "Shipped", "Delivered", "Cancelled"],
       default: "Pending",
       index: true,
+    },
+    pricePerUnit: {
+      type: Number,
+      required: true,
+      min: [0, "Price per unit must be non-negative"],
+    },
+    subTotal: {
+      type: Number,
+      required: true,
+      min: [0, "Subtotal must be non-negative"],
     },
     deleted_at: {
       type: Date,
@@ -59,5 +52,3 @@ const productOrderSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("ProductOrder", productOrderSchema);
-
-
