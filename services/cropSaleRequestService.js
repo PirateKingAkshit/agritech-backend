@@ -80,7 +80,7 @@ const getAllSaleRequestsService = async (requestingUser, { page = 1, limit = 10,
   const count = await CropSaleRequest.countDocuments(filter);
   const data = await CropSaleRequest.find(filter)
     .populate("userId", "first_name last_name phone")
-    .populate("cropId", "name category")
+    .populate("cropId", "name category image")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -98,7 +98,7 @@ const getAllSaleRequestsService = async (requestingUser, { page = 1, limit = 10,
 const getSaleRequestByIdService = async (id, requestingUser) => {
   const request = await CropSaleRequest.findOne({ _id: id, deleted_at: null })
     .populate("userId", "first_name last_name phone role")
-    .populate("cropId", "name category");
+    .populate("cropId", "name category image");
   if (!request) {
     throw new Error("Sale request not found", 404);
   }

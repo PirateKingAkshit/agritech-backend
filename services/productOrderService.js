@@ -114,7 +114,7 @@ const getAllProductOrdersService = async (requestingUser, { page = 1, limit = 10
   const count = await ProductOrder.countDocuments(filter);
   const data = await ProductOrder.find(filter)
     .populate("userId", "first_name last_name phone email")
-    .populate("productId", "name category")
+    .populate("productId", "name category image")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -132,7 +132,7 @@ const getAllProductOrdersService = async (requestingUser, { page = 1, limit = 10
 const getProductOrderByIdService = async (id, requestingUser) => {
   const order = await ProductOrder.findOne({ _id: id, deleted_at: null })
     .populate("userId", "first_name last_name phone role email")
-    .populate("productId", "name category");
+    .populate("productId", "name category image");
   if (!order) {
     throw new Error("Product order not found", 404);
   }
