@@ -8,7 +8,7 @@ const createMediaService = async (files, type, requestUser) => {
     throw new Error("Unauthorized", 403);
   }
   const mediaItems = [];
-  const baseUrl = `http://localhost:${process.env.PORT || 5000}`;
+  const baseUrl = process.env.BASE_URL
   
   for (const file of files) {
     // Normalize the file path to use forward slashes for URLs
