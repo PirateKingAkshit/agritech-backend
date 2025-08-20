@@ -1,25 +1,25 @@
-// productOrderRoutes.js
 const express = require("express");
 const router = express.Router();
 const { authMiddleware } = require("../middleware/authMiddleware");
 const {
-  createProductOrder,
-  getMyProductOrders,
-  getAllProductOrders,
-  getProductOrderById,
-  updateProductOrderUser,
-  updateProductOrderStatus,
+  createOrder,
+  getMyOrders,
+  getAllOrders,
+  getOrderById,
+  updateOrderUser,
+  updateOrderStatus,
 } = require("../controllers/productOrderController");
 
 // User routes
-router.post("/user", authMiddleware, createProductOrder);
-router.get("/user", authMiddleware, getMyProductOrders);
-router.get("/user/:id", authMiddleware, getProductOrderById);
-router.put("/user/:id", authMiddleware, updateProductOrderUser);
+router.post("/user", authMiddleware, createOrder);
+router.get("/user", authMiddleware, getMyOrders);
+router.get("/user/:id", authMiddleware, getOrderById);
+router.put("/user/:id", authMiddleware, updateOrderUser);
 
 // Admin routes
-router.get("/", authMiddleware, getAllProductOrders);
-router.get("/:id", authMiddleware, getProductOrderById);
-router.put("/:id", authMiddleware, updateProductOrderStatus);
+router.get("/", authMiddleware, getAllOrders);
+router.get("/:id", authMiddleware, getOrderById);
+router.put("/:id", authMiddleware, updateOrderStatus);
 
 module.exports = router;
+

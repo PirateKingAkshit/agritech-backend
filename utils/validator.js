@@ -343,7 +343,7 @@ const validateUpdateCropSaleRequestStatus = [
 const validateCreateProductOrder = [
   body('products')
     .isArray({ min: 1 })
-    .withMessage('At least one product is required'),
+    .withMessage('products must be a non-empty array'),
   body('products.*.productId')
     .notEmpty().withMessage('productId is required')
     .isMongoId().withMessage('Invalid productId'),
@@ -351,13 +351,37 @@ const validateCreateProductOrder = [
     .notEmpty().withMessage('quantity is required')
     .isFloat({ gt: 0 }).withMessage('quantity must be a number greater than 0')
     .toFloat(),
+  body('products.*.pricePerUnit')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('pricePerUnit must be > 0')
+    .toFloat(),
+  body('totalPrice')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('totalPrice must be > 0')
+    .toFloat(),
 ];
 
 const validateUpdateProductOrderUser = [
-  body('status')
+  body('status').not().exists().withMessage('status cannot be updated by user'),
+  body('products')
     .optional({ checkFalsy: true })
-    .equals('Cancelled')
-    .withMessage('User can only set status to Cancelled'),
+    .isArray({ min: 1 })
+    .withMessage('products must be a non-empty array'),
+  body('products.*.productId')
+    .optional({ checkFalsy: true })
+    .isMongoId().withMessage('Invalid productId'),
+  body('products.*.quantity')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('quantity must be a number greater than 0')
+    .toFloat(),
+  body('products.*.pricePerUnit')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('pricePerUnit must be > 0')
+    .toFloat(),
+  body('totalPrice')
+    .optional({ checkFalsy: true })
+    .isFloat({ gt: 0 }).withMessage('totalPrice must be > 0')
+    .toFloat(),
 ];
 
 const validateUpdateProductOrderStatus = [

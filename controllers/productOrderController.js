@@ -1,4 +1,3 @@
-// productOrderController.js
 const { asyncHandler } = require("../utils/asyncHandler");
 const {
   validateCreateProductOrder,
@@ -8,29 +7,29 @@ const {
   handleValidationErrors,
 } = require("../utils/validator");
 const {
-  createProductOrderService,
-  getMyProductOrdersService,
-  getAllProductOrdersService,
-  getProductOrderByIdService,
-  updateProductOrderUserService,
-  updateProductOrderStatusService,
+  createOrderService,
+  getMyOrdersService,
+  getAllOrdersService,
+  getOrderByIdService,
+  updateOrderUserService,
+  updateOrderStatusService,
 } = require("../services/productOrderService");
 
-const createProductOrder = [
+const createOrder = [
   validateCreateProductOrder,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const orders = await createProductOrderService(req.body.products, req.user);
-    res.status(200).json({ message: "Product orders created", data: orders });
+    const order = await createOrderService(req.body, req.user);
+    res.status(200).json({ message: "Order created", data: order });
   }),
 ];
 
-const getMyProductOrders = [
+const getMyOrders = [
   validatePagination,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, status, q = "" } = req.query;
-    const result = await getMyProductOrdersService(req.user, {
+    const result = await getMyOrdersService(req.user, {
       page: parseInt(page),
       limit: parseInt(limit),
       status,
@@ -40,12 +39,12 @@ const getMyProductOrders = [
   }),
 ];
 
-const getAllProductOrders = [
+const getAllOrders = [
   validatePagination,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, status, q = "" } = req.query;
-    const result = await getAllProductOrdersService(req.user, {
+    const result = await getAllOrdersService(req.user, {
       page: parseInt(page),
       limit: parseInt(limit),
       status,
@@ -55,42 +54,45 @@ const getAllProductOrders = [
   }),
 ];
 
-const getProductOrderById = asyncHandler(async (req, res) => {
-  const data = await getProductOrderByIdService(req.params.id, req.user);
-  res.status(200).json({ message: "Product order fetched", data });
+const getOrderById = asyncHandler(async (req, res) => {
+  const data = await getOrderByIdService(req.params.id, req.user);
+  res.status(200).json({ message: "Order fetched", data });
 });
 
-const updateProductOrderUser = [
+const updateOrderUser = [
   validateUpdateProductOrderUser,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const updated = await updateProductOrderUserService(
+    const updated = await updateOrderUserService(
       req.params.id,
       req.body,
       req.user
     );
-    res.status(200).json({ message: "Product order updated", data: updated });
+    res.status(200).json({ message: "Order updated", data: updated });
   }),
 ];
 
-const updateProductOrderStatus = [
+const updateOrderStatus = [
   validateUpdateProductOrderStatus,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const updated = await updateProductOrderStatusService(
+    const updated = await updateOrderStatusService(
       req.params.id,
       req.body,
       req.user
     );
-    res.status(200).json({ message: "Product order updated by admin", data: updated });
+    res
+      .status(200)
+      .json({ message: "Order updated by admin", data: updated });
   }),
 ];
 
 module.exports = {
-  createProductOrder,
-  getMyProductOrders,
-  getAllProductOrders,
-  getProductOrderById,
-  updateProductOrderUser,
-  updateProductOrderStatus,
+  createOrder,
+  getMyOrders,
+  getAllOrders,
+  getOrderById,
+  updateOrderUser,
+  updateOrderStatus,
 };
+

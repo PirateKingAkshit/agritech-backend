@@ -1,6 +1,5 @@
-// productOrderService.js
 const ProductOrder = require("../models/productOrderModel");
-const ProductMaster = require("../models/productMasterModel"); // Assuming the file name is productMasterModel.js
+const ProductMaster = require("../models/productMasterModel");
 const Error = require("../utils/error");
 
 function generateOrderId() {
@@ -15,57 +14,52 @@ function generateOrderId() {
   return `PO-${yyyy}${mm}${dd}-${hh}${mi}${ss}-${rand}`;
 }
 
-const createProductOrderService = async (products, requestingUser) => {
+const createOrderService = async (payload, requestingUser) => {
   if (!requestingUser?.id) {
     throw new Error("Unauthorized", 401);
   }
 
-  // Collect product IDs from request
-  const productIds = products.map((p) => p.productId);
-
-  // Fetch all valid products in one query
-  const validProducts = await ProductMaster.find({
-    _id: { $in: productIds },
-    deleted_at: null,
-    isActive: true,
-  });
-
-  // Identify invalid/missing products
-  const validIds = validProducts.map((p) => String(p._id));
-  const invalidIds = productIds.filter((id) => !validIds.includes(id));
-
-  if (invalidIds.length > 0) {
-    throw new Error(
-      `Order creation failed. The following products are invalid or inactive: ${invalidIds.join(", ")}`,
-      404
-    );
+  if (!Array.isArray(payload.products) || payload.products.length === 0) {
+    throw new Error("At least one product is required", 400);
   }
 
-  // ✅ All products are valid, create single orderId
-  const orderId = generateOrderId();
-  const orders = [];
+  // Build products array with price lookups and subtotal/total computations
+  const productsDetailed = [];
+  let computedTotal = 0;
 
-  for (const item of products) {
-    const product = validProducts.find((p) => String(p._id) === item.productId);
-
-    const newOrder = new ProductOrder({
-      orderId,
-      userId: requestingUser.id,
-      productId: item.productId,
-      quantity: item.quantity,
-      pricePerUnit: product.price,
-      subTotal: item.quantity * product.price,
+  for (const item of payload.products) {
+    const product = await ProductMaster.findOne({ _id: item.productId, deleted_at: null, isActive: true });
+    if (!product) {
+      throw new Error("Invalid product in order", 400);
+    }
+    const pricePerUnit = Number(item.pricePerUnit ?? product.price);
+    const quantity = Number(item.quantity);
+    if (!(quantity > 0)) {
+      throw new Error("Quantity must be greater than 0", 400);
+    }
+    const subTotal = pricePerUnit * quantity;
+    computedTotal += subTotal;
+    productsDetailed.push({
+      productId: product._id,
+      quantity,
+      pricePerUnit,
+      subTotal,
     });
-
-    await newOrder.save();
-    orders.push(newOrder);
   }
 
-  return orders;
+  const totalPrice = Number(payload.totalPrice ?? computedTotal);
+
+  const order = new ProductOrder({
+    orderId: generateOrderId(),
+    userId: requestingUser.id,
+    products: productsDetailed,
+    totalPrice,
+  });
+  await order.save();
+  return order;
 };
 
-
-const getMyProductOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
+const getMyOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
   if (!requestingUser?.id) {
     throw new Error("Unauthorized", 401);
   }
@@ -74,15 +68,11 @@ const getMyProductOrdersService = async (requestingUser, { page = 1, limit = 10,
     deleted_at: null,
     userId: requestingUser.id,
     ...(status ? { status } : {}),
-    $or: q
-      ? [
-          { orderId: { $regex: q, $options: "i" } },
-        ]
-      : [{}],
+    $or: q ? [{ orderId: { $regex: q, $options: "i" } }] : [{}],
   };
   const count = await ProductOrder.countDocuments(filter);
   const data = await ProductOrder.find(filter)
-    .populate("productId", "name category")
+    .populate("products.productId", "name category price image")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -97,7 +87,7 @@ const getMyProductOrdersService = async (requestingUser, { page = 1, limit = 10,
   };
 };
 
-const getAllProductOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
+const getAllOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
   if (requestingUser.role !== "Admin") {
     throw new Error("Unauthorized", 403);
   }
@@ -105,16 +95,12 @@ const getAllProductOrdersService = async (requestingUser, { page = 1, limit = 10
   const filter = {
     deleted_at: null,
     ...(status ? { status } : {}),
-    $or: q
-      ? [
-          { orderId: { $regex: q, $options: "i" } },
-        ]
-      : [{}],
+    $or: q ? [{ orderId: { $regex: q, $options: "i" } }] : [{}],
   };
   const count = await ProductOrder.countDocuments(filter);
   const data = await ProductOrder.find(filter)
-    .populate("userId", "first_name last_name phone email")
-    .populate("productId", "name category image")
+    .populate("userId", "first_name last_name phone")
+    .populate("products.productId", "name category price image")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -129,12 +115,12 @@ const getAllProductOrdersService = async (requestingUser, { page = 1, limit = 10
   };
 };
 
-const getProductOrderByIdService = async (id, requestingUser) => {
+const getOrderByIdService = async (id, requestingUser) => {
   const order = await ProductOrder.findOne({ _id: id, deleted_at: null })
-    .populate("userId", "first_name last_name phone role email")
-    .populate("productId", "name category image");
+    .populate("userId", "first_name last_name phone role")
+    .populate("products.productId", "name category price image");
   if (!order) {
-    throw new Error("Product order not found", 404);
+    throw new Error("Order not found", 404);
   }
   if (requestingUser.role !== "Admin" && String(order.userId._id) !== String(requestingUser.id)) {
     throw new Error("Unauthorized to access this order", 403);
@@ -142,46 +128,69 @@ const getProductOrderByIdService = async (id, requestingUser) => {
   return order;
 };
 
-const updateProductOrderUserService = async (id, updates, requestingUser) => {
+const updateOrderUserService = async (id, updates, requestingUser) => {
   const order = await ProductOrder.findOne({ _id: id, deleted_at: null });
   if (!order) {
-    throw new Error("Product order not found", 404);
+    throw new Error("Order not found", 404);
   }
   if (String(order.userId) !== String(requestingUser.id)) {
     throw new Error("Unauthorized to update this order", 403);
   }
-  if (updates.status === 'Cancelled') {
-    if (order.status !== 'Pending') {
-      throw new Error("Can only cancel pending orders", 400);
+  // Allow user to update products only when status is Pending
+  if (order.status !== "Pending") {
+    throw new Error("Order cannot be edited once processing started", 400);
+  }
+  if (updates.products) {
+    if (!Array.isArray(updates.products) || updates.products.length === 0) {
+      throw new Error("products must be a non-empty array", 400);
     }
-    order.status = 'Cancelled';
-  } else {
-    throw new Error("User can only cancel the order", 400);
+    const productsDetailed = [];
+    let computedTotal = 0;
+    for (const item of updates.products) {
+      const product = await ProductMaster.findOne({ _id: item.productId, deleted_at: null, isActive: true });
+      if (!product) {
+        throw new Error("Invalid product in order", 400);
+      }
+      const pricePerUnit = Number(item.pricePerUnit ?? product.price);
+      const quantity = Number(item.quantity);
+      if (!(quantity > 0)) {
+        throw new Error("Quantity must be greater than 0", 400);
+      }
+      const subTotal = pricePerUnit * quantity;
+      computedTotal += subTotal;
+      productsDetailed.push({ productId: product._id, quantity, pricePerUnit, subTotal });
+    }
+    order.products = productsDetailed;
+    order.totalPrice = Number(updates.totalPrice ?? computedTotal);
   }
   await order.save();
   return order;
 };
 
-const updateProductOrderStatusService = async (id, updates, requestingUser) => {
+const updateOrderStatusService = async (id, updates, requestingUser) => {
   if (requestingUser.role !== "Admin") {
     throw new Error("Unauthorized", 403);
   }
   const order = await ProductOrder.findOne({ _id: id, deleted_at: null });
   if (!order) {
-    throw new Error("Product order not found", 404);
+    throw new Error("Order not found", 404);
   }
-  if (updates.status) {
-    order.status = updates.status;
-  }
+  const allowedUpdates = ["status"];
+  Object.keys(updates || {}).forEach((key) => {
+    if (allowedUpdates.includes(key)) {
+      order[key] = updates[key];
+    }
+  });
   await order.save();
   return order;
 };
 
 module.exports = {
-  createProductOrderService,
-  getMyProductOrdersService,
-  getAllProductOrdersService,
-  getProductOrderByIdService,
-  updateProductOrderUserService,
-  updateProductOrderStatusService,
+  createOrderService,
+  getMyOrdersService,
+  getAllOrdersService,
+  getOrderByIdService,
+  updateOrderUserService,
+  updateOrderStatusService,
 };
+
