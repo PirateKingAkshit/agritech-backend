@@ -3,6 +3,7 @@ const ProductMaster = require("../models/productMasterModel");
 const GovernmentScheme = require("../models/governmentSchemeModel");
 const TutorialsMaster = require("../models/tutorialsMasterModel");
 const CropSaleRequest = require("../models/cropSaleRequestModel");
+const ProductOrderRequest = require("../models/productOrderModel");
 const Error = require("../utils/error");
 
 function normalizeFromDate(from) {
@@ -52,12 +53,14 @@ const getDashboardStatsService = async (requestingUser, { from, to } = {}) => {
     governmentSchemes,
     tutorials,
     cropSaleRequests,
+    productOrderRequests,
   ] = await Promise.all([
     CropMaster.countDocuments(commonFilter),
     ProductMaster.countDocuments(commonFilter),
     GovernmentScheme.countDocuments(commonFilter),
     TutorialsMaster.countDocuments(commonFilter),
-    CropSaleRequest.countDocuments({ deleted_at: null, ...createdAtFilter }),
+    CropSaleRequest.countDocuments(commonFilter),
+    ProductOrderRequest.countDocuments(commonFilter),
   ]);
 
   return {
@@ -66,6 +69,7 @@ const getDashboardStatsService = async (requestingUser, { from, to } = {}) => {
     governmentSchemes,
     tutorials,
     cropSaleRequests,
+    productOrderRequests,
   };
 };
 
