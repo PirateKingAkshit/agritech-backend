@@ -24,6 +24,7 @@ const createSaleRequestService = async (payload, requestingUser) => {
     quantity: payload.quantity,
     quantity_unit: payload.quantity_unit,
     price_per_unit: payload.price_per_unit,
+    ready_to_sell_on: payload.ready_to_sell_on
   });
   await request.save();
   return request;
@@ -120,6 +121,7 @@ const updateSaleRequestUserService = async (id, updates, requestingUser) => {
     "quantity",
     "quantity_unit",
     "price_per_unit",
+    "ready_to_sell_on"
   ];
   Object.keys(updates).forEach((key) => {
     if (allowedUpdates.includes(key)) {
