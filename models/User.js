@@ -14,7 +14,7 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       required: [true, "Phone number is required"],
-      unique: true,
+      // unique: true,
       trim: true,
       match: [/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"],
     },
