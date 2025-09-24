@@ -5,6 +5,7 @@ const {
   createTutorial,
   getAllTutorials,
   getActiveTutorialsPublic,
+  getActiveTutorialsByIdPublic,
   getTutorialById,
   updateTutorial,
   deleteTutorial,
@@ -23,7 +24,8 @@ const upload = createMulterInstance({
 router.post("/", authMiddleware, upload.single("image"), createTutorial);
 router.get("/", authMiddleware, getAllTutorials);
 // Public: active tutorials list (no auth)
-router.get("/public/active/:lang", getActiveTutorialsPublic);
+router.get("/public/active", getActiveTutorialsPublic);
+router.get("/public/active/:id", getActiveTutorialsByIdPublic);
 router.get("/:id", authMiddleware, getTutorialById);
 router.put("/:id", authMiddleware, upload.single("image"), updateTutorial);
 router.delete("/:id", authMiddleware, deleteTutorial);

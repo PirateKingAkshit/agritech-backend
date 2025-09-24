@@ -1,4 +1,5 @@
 const TutorialsMaster = require("../models/tutorialsMasterModel");
+const cleanQuillHtml = require("../utils/cleanQuillHtml");
 const Error = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
@@ -6,7 +7,10 @@ const path = require("path");
 const createTutorialService = async (data, requestUser) => {
   if (requestUser.role !== "Admin") throw new Error("Unauthorized", 403);
 
-  const exists = await TutorialsMaster.findOne({ name: data.name, deleted_at: null });
+  const exists = await TutorialsMaster.findOne({
+    name: data.name,
+    deleted_at: null,
+  });
   if (exists) throw new Error("Tutorial with this name already exists", 409);
 
   const tutorial = new TutorialsMaster(data);
@@ -32,7 +36,12 @@ const getAllTutorialsService = async (page, limit, search) => {
 
   return {
     data: tutorials,
-    pagination: { currentPage: page, totalPages: Math.ceil(count / limit), totalItems: count, limit },
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(count / limit),
+      totalItems: count,
+      limit,
+    },
   };
 };
 
@@ -55,7 +64,34 @@ const getActiveTutorialsPublicService = async (page, limit, search, lang) => {
 
   return {
     data: tutorials,
-    pagination: { currentPage: page, totalPages: Math.ceil(count / limit), totalItems: count, limit },
+    pagination: {
+      currentPage: page,
+      totalPages: Math.ceil(count / limit),
+      totalItems: count,
+      limit,
+    },
+  };
+};
+
+const getActiveTutorialsByIdPublicService = async (id, lang) => {
+  const tutorial = await TutorialsMaster.findOne({
+    _id: id,
+    language: lang,
+    deleted_at: null,
+    isActive: true,
+  });
+
+  if (!tutorial) throw new Error("Tutorial not found", 404);
+
+  // Clean description
+  const descriptionHtml = cleanQuillHtml(tutorial.description);
+
+  return {
+    message: "Tutorial fetched successfully",
+    data: {
+      ...tutorial.toObject(),
+      descriptionHtml,
+    },
   };
 };
 
@@ -70,19 +106,23 @@ const updateTutorialService = async (id, updates, requestUser) => {
 
   // If name is being updated, check for uniqueness
   if (updates.name) {
-    const exists = await TutorialsMaster.findOne({ name: updates.name, deleted_at: null, _id: { $ne: id } });
+    const exists = await TutorialsMaster.findOne({
+      name: updates.name,
+      deleted_at: null,
+      _id: { $ne: id },
+    });
     if (exists) throw new Error("Tutorial with this name already exists", 409);
   }
   const tutorial = await TutorialsMaster.findOne({ _id: id, deleted_at: null });
   if (!tutorial) throw new Error("Tutorial not found", 404);
 
   if (updates.image && tutorial.image) {
-      try {
-        await fs.unlink(path.resolve(__dirname, "../", tutorial.image));
-      } catch (error) {
-        console.error(`Failed to delete old image: ${tutorial.image}`, error);
-      }
+    try {
+      await fs.unlink(path.resolve(__dirname, "../", tutorial.image));
+    } catch (error) {
+      console.error(`Failed to delete old image: ${tutorial.image}`, error);
     }
+  }
 
   Object.assign(tutorial, updates);
   await tutorial.save();
@@ -91,7 +131,11 @@ const updateTutorialService = async (id, updates, requestUser) => {
 
 const deleteTutorialService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") throw new Error("Unauthorized", 403);
-  const tutorial = await TutorialsMaster.findOne({ _id: id, deleted_at: null, isActive: true });
+  const tutorial = await TutorialsMaster.findOne({
+    _id: id,
+    deleted_at: null,
+    isActive: true,
+  });
   if (!tutorial) throw new Error("Tutorial not found", 404);
 
   tutorial.isActive = false;
@@ -102,7 +146,11 @@ const deleteTutorialService = async (id, requestUser) => {
 
 const disableTutorialService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") throw new Error("Unauthorized", 403);
-  const tutorial = await TutorialsMaster.findOne({ _id: id, deleted_at: null, isActive: true });
+  const tutorial = await TutorialsMaster.findOne({
+    _id: id,
+    deleted_at: null,
+    isActive: true,
+  });
   if (!tutorial) throw new Error("Tutorial not found", 404);
 
   tutorial.isActive = false;
@@ -112,7 +160,11 @@ const disableTutorialService = async (id, requestUser) => {
 
 const enableTutorialService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") throw new Error("Unauthorized", 403);
-  const tutorial = await TutorialsMaster.findOne({ _id: id, deleted_at: null, isActive: false });
+  const tutorial = await TutorialsMaster.findOne({
+    _id: id,
+    deleted_at: null,
+    isActive: false,
+  });
   if (!tutorial) throw new Error("Tutorial not found", 404);
 
   tutorial.isActive = true;
@@ -124,6 +176,7 @@ module.exports = {
   createTutorialService,
   getAllTutorialsService,
   getActiveTutorialsPublicService,
+  getActiveTutorialsByIdPublicService,
   getTutorialByIdService,
   updateTutorialService,
   deleteTutorialService,

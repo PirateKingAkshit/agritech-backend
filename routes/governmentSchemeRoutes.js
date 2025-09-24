@@ -5,6 +5,7 @@ const {
   createScheme,
   getAllSchemes,
   getActiveSchemesPublic,
+  getActiveSchemesByIdPublic,
   getSchemeById,
   updateScheme,
   deleteScheme,
@@ -22,7 +23,8 @@ const upload = createMulterInstance({
 router.post("/", authMiddleware, upload.any(), createScheme);
 router.get("/", authMiddleware, getAllSchemes);
 // Public: active schemes list (no auth)
-router.get("/public/active/:lang", getActiveSchemesPublic);
+router.get("/public/active", getActiveSchemesPublic);
+router.get("/public/active/:id", getActiveSchemesByIdPublic);
 router.get("/:schemeId", authMiddleware, getSchemeById);
 router.put("/:id", authMiddleware, upload.any(), updateScheme);
 router.delete("/:id", authMiddleware, deleteScheme);

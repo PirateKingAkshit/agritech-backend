@@ -8,6 +8,7 @@ const {
   createTutorialService,
   getAllTutorialsService,
   getActiveTutorialsPublicService,
+  getActiveTutorialsByIdPublicService,
   getTutorialByIdService,
   updateTutorialService,
   deleteTutorialService,
@@ -35,11 +36,17 @@ const getAllTutorials = asyncHandler(async (req, res) => {
 });
 
 const getActiveTutorialsPublic = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, q = "" } = req.query;
-  const { lang } = req.params;
+  const { page = 1, limit = 10, q = "", lang } = req.query;
   const result = await getActiveTutorialsPublicService(parseInt(page), parseInt(limit), q, lang );
   res.status(200).json(result);
 });
+
+const getActiveTutorialsByIdPublic = asyncHandler(async(req, res) => {
+  const { id } = req.params;
+  const { lang } = req.query;
+  const result = await getActiveTutorialsByIdPublicService(id, lang);
+  res.status(200).json(result);
+})
 
 const getTutorialById = asyncHandler(async (req, res) => {
   const tutorial = await getTutorialByIdService(req.params.id);
@@ -78,6 +85,7 @@ module.exports = {
   createTutorial,
   getAllTutorials,
   getActiveTutorialsPublic,
+  getActiveTutorialsByIdPublic,
   getTutorialById,
   updateTutorial,
   deleteTutorial,

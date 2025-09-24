@@ -8,12 +8,18 @@ const createSchemeService = async (schemeData, files, requestUser) => {
     throw new Error("Unauthorized", 403);
   }
   const { name, translations } = schemeData;
-  if (!translations || !Array.isArray(translations) || translations.length === 0) {
+  if (
+    !translations ||
+    !Array.isArray(translations) ||
+    translations.length === 0
+  ) {
     throw new Error("At least one translation is required", 400);
   }
 
   // Generate next schemeId in the format SCHEME_001, SCHEME_002, ...
-  let lastScheme = await GovernmentScheme.findOne({ schemeId: { $regex: /^SCHEME_\d+$/ } })
+  let lastScheme = await GovernmentScheme.findOne({
+    schemeId: { $regex: /^SCHEME_\d+$/ },
+  })
     .sort({ schemeId: -1 })
     .collation({ locale: "en_US", numericOrdering: true });
   let nextNumber = 1;
@@ -36,10 +42,13 @@ const createSchemeService = async (schemeData, files, requestUser) => {
   for (let i = 0; i < translations.length; i++) {
     const { name: transName, description, language } = translations[i];
     if (existingLanguages.includes(language)) {
-      throw new Error(`Translation for language ${language} already exists`, 409);
+      throw new Error(
+        `Translation for language ${language} already exists`,
+        409
+      );
     }
     const imageField = `translation_images_${i}`;
-    const image = files.find(f => f.fieldname === imageField)?.path;
+    const image = files.find((f) => f.fieldname === imageField)?.path;
     if (!image) {
       throw new Error(`Image is required for translation in ${language}`, 400);
     }
@@ -157,6 +166,32 @@ const getActiveSchemesPublicService = async (page, limit, search, lang) => {
   };
 };
 
+const getActiveSchemesByIdPublicSerive = async (id, lang) => {
+  const scheme = await GovernmentScheme.findOne({
+    _id: id,
+    isActive: true,
+    deleted_at: null,
+  });
+
+  if (!scheme) {
+    throw new Error("Scheme not found", 404);
+  }
+  const translation = scheme.translation.find((t) => t.language === lang);
+  if (!translation) {
+    throw new Error(`Translation not found for language ${lang}`, 404);
+  }
+
+  return {
+    message: "Scheme fetched successfully",
+    data: {
+      schemeId: scheme.schemeId,
+      name: translation.name,
+      image: translation.image,
+      description: translation.description,
+    },
+  };
+};
+
 const getSchemeByIdService = async (schemeId) => {
   const scheme = await GovernmentScheme.findOne({
     schemeId,
@@ -191,12 +226,21 @@ const updateSchemeService = async (id, updates, files, requestUser) => {
 
     // Delete images for translations that are removed
     for (const oldTranslation of scheme.translation) {
-      if (!translations.some(t => t._id && t._id === oldTranslation._id.toString())) {
+      if (
+        !translations.some(
+          (t) => t._id && t._id === oldTranslation._id.toString()
+        )
+      ) {
         if (oldTranslation.image) {
           try {
-            await fs.unlink(path.resolve(__dirname, "../", oldTranslation.image));
+            await fs.unlink(
+              path.resolve(__dirname, "../", oldTranslation.image)
+            );
           } catch (error) {
-            console.error(`Failed to delete old image: ${oldTranslation.image}`, error);
+            console.error(
+              `Failed to delete old image: ${oldTranslation.image}`,
+              error
+            );
           }
         }
       }
@@ -205,40 +249,74 @@ const updateSchemeService = async (id, updates, files, requestUser) => {
     for (let i = 0; i < translations.length; i++) {
       const { _id, name: transName, description, language } = translations[i];
       const imageField = `translation_images_${i}`;
-      const newImage = files.find(f => f.fieldname === imageField)?.path;
+      const newImage = files.find((f) => f.fieldname === imageField)?.path;
 
       if (_id) {
         // Update existing translation
-        const translationIndex = scheme.translation.findIndex(t => t._id.toString() === _id);
+        const translationIndex = scheme.translation.findIndex(
+          (t) => t._id.toString() === _id
+        );
         if (translationIndex === -1) {
           throw new Error(`Translation with ID ${_id} not found`, 404);
         }
-        if (language && language !== scheme.translation[translationIndex].language) {
-          if (existingLanguages.includes(language) || scheme.translation.some(t => t.language === language && t._id.toString() !== _id)) {
-            throw new Error(`Translation for language ${language} already exists`, 409);
+        if (
+          language &&
+          language !== scheme.translation[translationIndex].language
+        ) {
+          if (
+            existingLanguages.includes(language) ||
+            scheme.translation.some(
+              (t) => t.language === language && t._id.toString() !== _id
+            )
+          ) {
+            throw new Error(
+              `Translation for language ${language} already exists`,
+              409
+            );
           }
         }
         if (newImage && scheme.translation[translationIndex].image) {
           try {
-            await fs.unlink(path.resolve(__dirname, "../", scheme.translation[translationIndex].image));
+            await fs.unlink(
+              path.resolve(
+                __dirname,
+                "../",
+                scheme.translation[translationIndex].image
+              )
+            );
           } catch (error) {
-            console.error(`Failed to delete old image: ${scheme.translation[translationIndex].image}`, error);
+            console.error(
+              `Failed to delete old image: ${scheme.translation[translationIndex].image}`,
+              error
+            );
           }
         }
         newTranslations[translationIndex] = {
           _id: scheme.translation[translationIndex]._id,
           name: transName || scheme.translation[translationIndex].name,
-          description: description !== undefined ? description : scheme.translation[translationIndex].description,
+          description:
+            description !== undefined
+              ? description
+              : scheme.translation[translationIndex].description,
           language: language || scheme.translation[translationIndex].language,
           image: newImage || scheme.translation[translationIndex].image,
         };
       } else {
         // Add new translation
-        if (existingLanguages.includes(language) || scheme.translation.some(t => t.language === language)) {
-          throw new Error(`Translation for language ${language} already exists`, 409);
+        if (
+          existingLanguages.includes(language) ||
+          scheme.translation.some((t) => t.language === language)
+        ) {
+          throw new Error(
+            `Translation for language ${language} already exists`,
+            409
+          );
         }
         if (!newImage) {
-          throw new Error(`Image is required for translation in ${language}`, 400);
+          throw new Error(
+            `Image is required for translation in ${language}`,
+            400
+          );
         }
         newTranslations.push({
           name: transName,
@@ -254,7 +332,9 @@ const updateSchemeService = async (id, updates, files, requestUser) => {
   }
 
   // Update top-level name if English translation is updated
-  const englishTranslation = scheme.translation.find(t => t.language.toLowerCase() === "english");
+  const englishTranslation = scheme.translation.find(
+    (t) => t.language.toLowerCase() === "english"
+  );
   if (englishTranslation) {
     scheme.name = englishTranslation.name;
   }
@@ -328,6 +408,7 @@ module.exports = {
   createSchemeService,
   getAllSchemesService,
   getActiveSchemesPublicService,
+  getActiveSchemesByIdPublicSerive,
   getSchemeByIdService,
   updateSchemeService,
   deleteSchemeService,
