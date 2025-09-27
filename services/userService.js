@@ -58,6 +58,8 @@ const verifyOtp = async ({ phone, otp }, { ipAddress }) => {
   user.otpExpires = undefined;
   await user.save();
 
+  console.log("user",user)
+
   await LoginHistory.create({
     userId: user._id,
     phone: user.phone,
@@ -82,6 +84,11 @@ const verifyOtp = async ({ phone, otp }, { ipAddress }) => {
       phone: user.phone,
       email: user.email,
       role: user.role,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      image: user.image,
+      address: user.address,
     },
   };
 };
