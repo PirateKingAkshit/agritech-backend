@@ -31,8 +31,8 @@ const generateOtpHandler = [
   validateOtpGenerate,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const { phone } = req.body;
-    const result = await generateOtp(phone);
+    const { phone, location } = req.body;
+    const result = await generateOtp(phone, location);
     res.status(200).json(result);
   }),
 ];

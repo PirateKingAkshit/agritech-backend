@@ -7,26 +7,29 @@ const Error = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 
-const generateOtp = async (phone) => {
+const generateOtp = async (phone, location) => {
   const user = await User.findOne({ phone, deleted_at: null }).select(
     "+otp +otpExpires"
   );
-  if (!user) {
-    throw new Error("User not found", 404);
+  if (user) {
+    if (!user.isActive) {
+      throw new Error("Unauthorized: User is inactive", 403);
+    }
+    //otp-generate for existingUser
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
+
+    user.otp = otp;
+    user.otpExpires = otpExpires;
+    await user.save();
+
+    logger.info(`OTP generated for phone: ${phone}`);
+    return { message: "OTP generated successfully", otp };
+  } else {
+    const result = await createSimpleUser({ phone, location });
+    logger.info(`OTP generated for phone: ${phone}`);
+    return { message: "OTP generated successfully", otp: result.otp };
   }
-  if (!user.isActive) {
-    throw new Error("Unauthorized: User is inactive", 403);
-  }
-
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
-  const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // Expires in 10 minutes
-
-  user.otp = otp;
-  user.otpExpires = otpExpires;
-  await user.save();
-
-  logger.info(`OTP generated for phone: ${phone}`);
-  return { message: "OTP generated successfully", otp }; // OTP returned for testing; in production, send via SMS/email
 };
 
 const verifyOtp = async ({ phone, otp }, { ipAddress }) => {
@@ -58,7 +61,7 @@ const verifyOtp = async ({ phone, otp }, { ipAddress }) => {
   user.otpExpires = undefined;
   await user.save();
 
-  console.log("user",user)
+  console.log("user", user);
 
   await LoginHistory.create({
     userId: user._id,
@@ -127,15 +130,12 @@ const createUser = async ({
   city,
   address,
   role,
-  image
+  image,
 }) => {
   const existingUser = await User.findOne({
-  deleted_at: null,  // check only active users
-  $or: [
-    { phone },
-    { email }
-  ]
-});
+    deleted_at: null, // check only active users
+    $or: [{ phone }, { email }],
+  });
   // if (role === "Admin") {
   //   existingUser = await User.findOne({ email, deleted_at: null });
   // }
@@ -164,7 +164,7 @@ const createUser = async ({
     address,
     role: role || "User",
     isActive: true,
-    image : image || ""
+    image: image || "",
   });
 
   await user.save();
@@ -197,14 +197,15 @@ const createSimpleUser = async ({ phone, location }) => {
 
   await user.save();
   logger.info(`Simple user registration: ${phone}`);
-  
+
   return {
-    message: "User registered successfully. Please verify your phone number with OTP.",
-    data: { 
-      id: user._id, 
-      phone, 
+    message:
+      "User registered successfully. Please verify your phone number with OTP.",
+    data: {
+      id: user._id,
+      phone,
       role: user.role,
-      requiresOtpVerification: true 
+      requiresOtpVerification: true,
     },
     otp, // Return OTP for testing; in production, send via SMS
   };
@@ -226,23 +227,27 @@ const updateSimpleUser = async (userId, updates) => {
     "state",
     "city",
     "address",
-    "image"
+    "image",
   ];
 
   // Filter out invalid fields
   const validUpdates = {};
-  Object.keys(updates).forEach(key => {
-    if (allowedUpdates.includes(key) && updates[key] !== undefined && updates[key] !== null) {
+  Object.keys(updates).forEach((key) => {
+    if (
+      allowedUpdates.includes(key) &&
+      updates[key] !== undefined &&
+      updates[key] !== null
+    ) {
       validUpdates[key] = updates[key];
     }
   });
 
   // Check if email is being updated and if it's already taken by another user
   if (validUpdates.email && validUpdates.email !== user.email) {
-    const existingUserWithEmail = await User.findOne({ 
-      email: validUpdates.email, 
-      _id: { $ne: userId }, 
-      deleted_at: null 
+    const existingUserWithEmail = await User.findOne({
+      email: validUpdates.email,
+      _id: { $ne: userId },
+      deleted_at: null,
     });
     if (existingUserWithEmail) {
       throw new Error("Email is already taken by another user", 400);
@@ -258,13 +263,13 @@ const updateSimpleUser = async (userId, updates) => {
   }
 
   // Apply updates
-  Object.keys(validUpdates).forEach(key => {
+  Object.keys(validUpdates).forEach((key) => {
     user[key] = validUpdates[key];
   });
 
   await user.save();
   logger.info(`Simple user updated: ${user.phone}`);
-  
+
   return {
     message: "User updated successfully",
     data: {
@@ -401,7 +406,7 @@ const updateUser = async (userId, updates, requestingUser) => {
     "role",
     "image",
     "createdAt",
-    "updatedAt"
+    "updatedAt",
   ];
   console.log("Updates received:", updates);
   const updateKeys = Object.keys(updates);

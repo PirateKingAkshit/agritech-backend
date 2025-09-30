@@ -166,6 +166,51 @@ const getActiveSchemesPublicService = async (page, limit, search, lang) => {
   };
 };
 
+const getTopActiveSchemesPublicService = async (lang) => {
+  const pipeline = [
+    {
+      $match: {
+        deleted_at: null,
+        isActive: true,
+      },
+    },
+    {
+      $project: {
+        schemeId: 1,
+        translation: {
+          $filter: {
+            input: "$translation",
+            as: "t",
+            cond: { $eq: ["$$t.language", lang] },
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        schemeId: 1,
+        name: { $arrayElemAt: ["$translation.name", 0] },
+        image: { $arrayElemAt: ["$translation.image", 0] },
+        description: { $arrayElemAt: ["$translation.description", 0] },
+        language: { $arrayElemAt: ["$translation.language", 0] },
+      },
+    },
+    {
+      $match: { language: lang },
+    },
+    {
+      $sort: { createdAt: -1 },
+    },
+    {
+      $limit: 5,
+    },
+  ];
+
+  const schemes = await GovernmentScheme.aggregate(pipeline);
+  return { data: schemes };
+};
+
+
 const getActiveSchemesByIdPublicSerive = async (id, lang) => {
   const scheme = await GovernmentScheme.findOne({
     _id: id,
@@ -408,6 +453,7 @@ module.exports = {
   createSchemeService,
   getAllSchemesService,
   getActiveSchemesPublicService,
+  getTopActiveSchemesPublicService,
   getActiveSchemesByIdPublicSerive,
   getSchemeByIdService,
   updateSchemeService,

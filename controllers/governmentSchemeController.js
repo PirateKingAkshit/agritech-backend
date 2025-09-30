@@ -8,6 +8,7 @@ const {
   createSchemeService,
   getAllSchemesService,
   getActiveSchemesPublicService,
+  getTopActiveSchemesPublicService,
   getActiveSchemesByIdPublicSerive,
   getSchemeByIdService,
   updateSchemeService,
@@ -49,6 +50,12 @@ const getActiveSchemesPublic = asyncHandler(async (req, res) => {
     q,
     lang
   );
+  res.status(200).json(result);
+});
+
+const getTopActiveSchemesPublic = asyncHandler(async (req, res) => {
+  const { lang } = req.query;
+  const result = await getTopActiveSchemesPublicService(lang);
   res.status(200).json(result);
 });
 
@@ -118,6 +125,7 @@ module.exports = {
   createScheme,
   getAllSchemes,
   getActiveSchemesPublic,
+  getTopActiveSchemesPublic,
   getActiveSchemesByIdPublic,
   getSchemeById,
   updateScheme,
