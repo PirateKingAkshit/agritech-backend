@@ -18,7 +18,8 @@ const stateRoutes = require("./routes/stateRoutes");
 const districtRoutes = require("./routes/districtRoutes");
 const marketRoutes = require("./routes/marketRoutes");
 const commodityRoutes = require("./routes/commodityRoutes");
-const mandiPriceRoutes = require("./routes/mandiPriceRoute")
+const mandiPriceRoutes = require("./routes/mandiPriceRoute");
+const recentUserActivity = require('./routes/recentActivityRoute');
 const logger = require("./utils/logger");
 const mime = require("mime");
 const fs = require("fs");
@@ -63,6 +64,7 @@ app.use("/api/v1/districts", districtRoutes);
 app.use("/api/v1/markets", marketRoutes);
 app.use("/api/v1/commodities", commodityRoutes);
 app.use("/api/v1/mandi-price", mandiPriceRoutes);
+app.use("/api/v1/recent-activities", recentUserActivity);
 
 // Health Check
 app.get("/api/v1/health", (req, res) => {

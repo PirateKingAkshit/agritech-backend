@@ -11,6 +11,7 @@ const {
   deleteScheme,
   disableScheme,
   enableScheme,
+  getTopActiveSchemesPublic,
 } = require("../controllers/governmentSchemeController");
 const { createMulterInstance } = require("../utils/multerConfig");
 
@@ -23,6 +24,7 @@ const upload = createMulterInstance({
 router.post("/", authMiddleware, upload.any(), createScheme);
 router.get("/", authMiddleware, getAllSchemes);
 // Public: active schemes list (no auth)
+router.get("/public/top-schemes", getTopActiveSchemesPublic);
 router.get("/public/active", getActiveSchemesPublic);
 router.get("/public/active/:id", getActiveSchemesByIdPublic);
 router.get("/:schemeId", authMiddleware, getSchemeById);
