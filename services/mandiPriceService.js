@@ -1,12 +1,12 @@
 const axios = require("axios");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 const dotenv = require("dotenv");
 dotenv.config();
 
 const getMandiPriceService = async (req, res) => {
   const { state, district, market, commodity } = req.query;
   if (!state || !district || !market || !commodity) {
-    throw new Error(
+    throw new ApiError(
       "Please provide state, district, market and commodity",
       400
     );
@@ -24,7 +24,7 @@ const getMandiPriceService = async (req, res) => {
   } catch (error) {
     console.log(error);
 
-    throw new Error("Failed to fetch mandi price", 500);
+    throw new ApiError("Failed to fetch mandi price", 500);
   }
 };
 

@@ -4,7 +4,7 @@ const GovernmentScheme = require("../models/governmentSchemeModel");
 const TutorialsMaster = require("../models/tutorialsMasterModel");
 const CropSaleRequest = require("../models/cropSaleRequestModel");
 const ProductOrderRequest = require("../models/productOrderModel");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 
 function normalizeFromDate(from) {
   const date = new Date(from);
@@ -25,14 +25,14 @@ function buildCreatedAtFilter(from, to) {
   if (from) {
     const fromDate = normalizeFromDate(from);
     if (isNaN(fromDate)) {
-      throw new Error("Invalid 'from' date", 400);
+      throw new ApiError("Invalid 'from' date", 400);
     }
     createdAt.$gte = fromDate;
   }
   if (to) {
     const toDate = normalizeToDate(to);
     if (isNaN(toDate)) {
-      throw new Error("Invalid 'to' date", 400);
+      throw new ApiError("Invalid 'to' date", 400);
     }
     createdAt.$lte = toDate;
   }
@@ -41,7 +41,7 @@ function buildCreatedAtFilter(from, to) {
 
 const getDashboardStatsService = async (requestingUser, { from, to } = {}) => {
   if (requestingUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
 
   const createdAtFilter = buildCreatedAtFilter(from, to);

@@ -1,19 +1,19 @@
 const ProductMaster = require("../models/productMasterModel");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 
 const createProductService = async (productData, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const existingProductSkuCode = await ProductMaster.findOne({ skuCode: productData.skuCode, deleted_at: null });
   if (existingProductSkuCode) {
-    throw new Error("Product with this sku code already exists", 409);
+    throw new ApiError("Product with this sku code already exists", 409);
   }
   const existingProductName = await ProductMaster.findOne({ name: productData.name, deleted_at: null });
   if (existingProductName) {
-    throw new Error("Product with this name already exists", 409);
+    throw new ApiError("Product with this name already exists", 409);
   }
   const product = new ProductMaster(productData);
   await product.save();
@@ -77,29 +77,29 @@ const getProductByIdService = async (id) => {
     deleted_at: null,
   });
   if (!product) {
-    throw new Error("Product not found", 404);
+    throw new ApiError("Product not found", 404);
   }
   return product;
 };
 
 const updateProductService = async (id, updates, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const existingProductSkuCode = await ProductMaster.findOne({ skuCode: updates.skuCode, deleted_at: null, _id: { $ne: id } });
   if (existingProductSkuCode) {
-    throw new Error("Product with this sku code already exists", 409);
+    throw new ApiError("Product with this sku code already exists", 409);
   }
   const existingProductName = await ProductMaster.findOne({ name: updates.name, deleted_at: null, _id: { $ne: id } });
   if (existingProductName) {
-    throw new Error("Product with this name already exists", 409);
+    throw new ApiError("Product with this name already exists", 409);
   }
   const product = await ProductMaster.findOne({
     _id: id,
     deleted_at: null,
   });
   if (!product) {
-    throw new Error("Product not found", 404);
+    throw new ApiError("Product not found", 404);
   }
   // If a new image is uploaded, delete the old image
   if (updates.image && product.image) {
@@ -116,7 +116,7 @@ const updateProductService = async (id, updates, requestUser) => {
 
 const deleteProductService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const product = await ProductMaster.findOne({
     _id: id,
@@ -124,7 +124,7 @@ const deleteProductService = async (id, requestUser) => {
     isActive: true,
   });
   if (!product) {
-    throw new Error("Product not found", 404);
+    throw new ApiError("Product not found", 404);
   }
   // Delete the associated image file
   if (product.image) {
@@ -142,7 +142,7 @@ const deleteProductService = async (id, requestUser) => {
 
 const disableProductService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const product = await ProductMaster.findOne({
     _id: id,
@@ -150,7 +150,7 @@ const disableProductService = async (id, requestUser) => {
     isActive: true,
   });
   if (!product) {
-    throw new Error("Product not found", 404);
+    throw new ApiError("Product not found", 404);
   }
   product.isActive = false;
   await product.save();
@@ -159,7 +159,7 @@ const disableProductService = async (id, requestUser) => {
 
 const enableProductService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const product = await ProductMaster.findOne({
     _id: id,
@@ -167,7 +167,7 @@ const enableProductService = async (id, requestUser) => {
     isActive: false,
   });
   if (!product) {
-    throw new Error("Product not found", 404);
+    throw new ApiError("Product not found", 404);
   }
   product.isActive = true;
   await product.save();

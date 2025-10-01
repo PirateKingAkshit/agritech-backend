@@ -1,4 +1,4 @@
-class Error extends global.Error {
+class ApiError extends Error {
   constructor(message, status, errors = null) {
     super(message);
     this.status = status;
@@ -9,4 +9,4 @@ class Error extends global.Error {
   }
 }
 
-module.exports = Error;
+module.exports = ApiError;

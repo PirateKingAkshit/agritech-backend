@@ -1,11 +1,11 @@
 const CropSaleRequest = require("../models/cropSaleRequestModel")
 const ProductOrder = require("../models/productOrderModel")
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 
 
 const getLatestUserActivityService = async (user) => {
   if (!user?.id) {
-    throw new Error("Unauthorized", 401);
+    throw new ApiError("Unauthorized", 401);
   }
 
   // Latest crop sale request

@@ -1,5 +1,5 @@
 const CropSaleRequest = require("../models/cropSaleRequestModel");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 
 function generateRequestId() {
   const now = new Date();
@@ -15,7 +15,7 @@ function generateRequestId() {
 
 const createSaleRequestService = async (payload, requestingUser) => {
   if (!requestingUser?.id) {
-    throw new Error("Unauthorized", 401);
+    throw new ApiError("Unauthorized", 401);
   }
   const request = new CropSaleRequest({
     requestId: generateRequestId(),
@@ -32,7 +32,7 @@ const createSaleRequestService = async (payload, requestingUser) => {
 
 const getMySaleRequestsService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
   if (!requestingUser?.id) {
-    throw new Error("Unauthorized", 401);
+    throw new ApiError("Unauthorized", 401);
   }
   const skip = (page - 1) * limit;
   const filter = {
@@ -47,7 +47,7 @@ const getMySaleRequestsService = async (requestingUser, { page = 1, limit = 10, 
   };
   const count = await CropSaleRequest.countDocuments(filter);
   const data = await CropSaleRequest.find(filter)
-    .populate("cropId", "name category")
+    .populate("cropId", "name category image")
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
@@ -66,7 +66,7 @@ const getMySaleRequestsService = async (requestingUser, { page = 1, limit = 10, 
 
 const getAllSaleRequestsService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
   if (requestingUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const skip = (page - 1) * limit;
   const filter = {
@@ -101,10 +101,10 @@ const getSaleRequestByIdService = async (id, requestingUser) => {
     .populate("userId", "first_name last_name phone role")
     .populate("cropId", "name category image");
   if (!request) {
-    throw new Error("Sale request not found", 404);
+    throw new ApiError("Sale request not found", 404);
   }
   if (requestingUser.role !== "Admin" && String(request.userId._id) !== String(requestingUser.id)) {
-    throw new Error("Unauthorized to access this request", 403);
+    throw new ApiError("Unauthorized to access this request", 403);
   }
   return request;
 };
@@ -112,10 +112,10 @@ const getSaleRequestByIdService = async (id, requestingUser) => {
 const updateSaleRequestUserService = async (id, updates, requestingUser) => {
   const request = await CropSaleRequest.findOne({ _id: id, deleted_at: null });
   if (!request) {
-    throw new Error("Sale request not found", 404);
+    throw new ApiError("Sale request not found", 404);
   }
   if (String(request.userId) !== String(requestingUser.id)) {
-    throw new Error("Unauthorized to update this request", 403);
+    throw new ApiError("Unauthorized to update this request", 403);
   }
   const allowedUpdates = [
     "quantity",
@@ -134,11 +134,11 @@ const updateSaleRequestUserService = async (id, updates, requestingUser) => {
 
 const updateSaleRequestStatusService = async (id, updates, requestingUser) => {
   if (requestingUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const request = await CropSaleRequest.findOne({ _id: id, deleted_at: null });
   if (!request) {
-    throw new Error("Sale request not found", 404);
+    throw new ApiError("Sale request not found", 404);
   }
   const allowedUpdates = [
     "status", // Admin can only update status now

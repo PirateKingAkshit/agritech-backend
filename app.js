@@ -49,6 +49,16 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use((req, res, next) => {
+  logger.info("=== Incoming Request ===", {
+    path: req.originalUrl,
+    method: req.method,
+    headers: req.headers,
+    body: req.body,
+  });
+  next();
+});
+
 // Routes
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/crop-master", cropMasterRoutes);

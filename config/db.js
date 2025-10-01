@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const logger = require("../utils/logger");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 
 const connectDB = async () => {
   try {
@@ -8,7 +8,7 @@ const connectDB = async () => {
     logger.info("MongoDB connected successfully");
   } catch (error) {
     logger.error("MongoDB connection failed:", error);
-    throw new Error("Database connection failed", 500);
+    throw new ApiError("Database connection failed", 500);
   }
 };
 

@@ -1,11 +1,11 @@
 const GovernmentScheme = require("../models/governmentSchemeModel");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 
 const createSchemeService = async (schemeData, files, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const { name, translations } = schemeData;
   if (
@@ -13,7 +13,7 @@ const createSchemeService = async (schemeData, files, requestUser) => {
     !Array.isArray(translations) ||
     translations.length === 0
   ) {
-    throw new Error("At least one translation is required", 400);
+    throw new ApiError("At least one translation is required", 400);
   }
 
   // Generate next schemeId in the format SCHEME_001, SCHEME_002, ...
@@ -42,7 +42,7 @@ const createSchemeService = async (schemeData, files, requestUser) => {
   for (let i = 0; i < translations.length; i++) {
     const { name: transName, description, language } = translations[i];
     if (existingLanguages.includes(language)) {
-      throw new Error(
+      throw new ApiError(
         `Translation for language ${language} already exists`,
         409
       );
@@ -50,7 +50,7 @@ const createSchemeService = async (schemeData, files, requestUser) => {
     const imageField = `translation_images_${i}`;
     const image = files.find((f) => f.fieldname === imageField)?.path;
     if (!image) {
-      throw new Error(`Image is required for translation in ${language}`, 400);
+      throw new ApiError(`Image is required for translation in ${language}`, 400);
     }
     scheme.translation.push({
       name: transName,
@@ -219,11 +219,11 @@ const getActiveSchemesByIdPublicSerive = async (id, lang) => {
   });
 
   if (!scheme) {
-    throw new Error("Scheme not found", 404);
+    throw new ApiError("Scheme not found", 404);
   }
   const translation = scheme.translation.find((t) => t.language === lang);
   if (!translation) {
-    throw new Error(`Translation not found for language ${lang}`, 404);
+    throw new ApiError(`Translation not found for language ${lang}`, 404);
   }
 
   return {
@@ -243,21 +243,21 @@ const getSchemeByIdService = async (schemeId) => {
     deleted_at: null,
   });
   if (!scheme) {
-    throw new Error("Scheme not found", 404);
+    throw new ApiError("Scheme not found", 404);
   }
   return scheme;
 };
 
 const updateSchemeService = async (id, updates, files, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const scheme = await GovernmentScheme.findOne({
     schemeId: id,
     deleted_at: null,
   });
   if (!scheme) {
-    throw new Error("Scheme not found", 404);
+    throw new ApiError("Scheme not found", 404);
   }
 
   const { name, translations } = updates;
@@ -302,7 +302,7 @@ const updateSchemeService = async (id, updates, files, requestUser) => {
           (t) => t._id.toString() === _id
         );
         if (translationIndex === -1) {
-          throw new Error(`Translation with ID ${_id} not found`, 404);
+          throw new ApiError(`Translation with ID ${_id} not found`, 404);
         }
         if (
           language &&
@@ -314,7 +314,7 @@ const updateSchemeService = async (id, updates, files, requestUser) => {
               (t) => t.language === language && t._id.toString() !== _id
             )
           ) {
-            throw new Error(
+            throw new ApiError(
               `Translation for language ${language} already exists`,
               409
             );
@@ -352,13 +352,13 @@ const updateSchemeService = async (id, updates, files, requestUser) => {
           existingLanguages.includes(language) ||
           scheme.translation.some((t) => t.language === language)
         ) {
-          throw new Error(
+          throw new ApiError(
             `Translation for language ${language} already exists`,
             409
           );
         }
         if (!newImage) {
-          throw new Error(
+          throw new ApiError(
             `Image is required for translation in ${language}`,
             400
           );
@@ -390,7 +390,7 @@ const updateSchemeService = async (id, updates, files, requestUser) => {
 
 const deleteSchemeService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const scheme = await GovernmentScheme.findOne({
     _id: id,
@@ -398,7 +398,7 @@ const deleteSchemeService = async (id, requestUser) => {
     isActive: true,
   });
   if (!scheme) {
-    throw new Error("Scheme not found", 404);
+    throw new ApiError("Scheme not found", 404);
   }
   for (const translation of scheme.translation) {
     if (translation.image) {
@@ -417,7 +417,7 @@ const deleteSchemeService = async (id, requestUser) => {
 
 const disableSchemeService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const scheme = await GovernmentScheme.findOne({
     _id: id,
@@ -425,7 +425,7 @@ const disableSchemeService = async (id, requestUser) => {
     isActive: true,
   });
   if (!scheme) {
-    throw new Error("Scheme not found", 404);
+    throw new ApiError("Scheme not found", 404);
   }
   scheme.isActive = false;
   await scheme.save();
@@ -434,7 +434,7 @@ const disableSchemeService = async (id, requestUser) => {
 
 const enableSchemeService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const scheme = await GovernmentScheme.findOne({
     _id: id,
@@ -442,7 +442,7 @@ const enableSchemeService = async (id, requestUser) => {
     isActive: false,
   });
   if (!scheme) {
-    throw new Error("Scheme not found", 404);
+    throw new ApiError("Scheme not found", 404);
   }
   scheme.isActive = true;
   await scheme.save();

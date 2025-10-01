@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const LoginHistory = require("../models/LoginHistory");
 const logger = require("../utils/logger");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 
@@ -13,7 +13,7 @@ const generateOtp = async (phone, location) => {
   );
   if (user) {
     if (!user.isActive) {
-      throw new Error("Unauthorized: User is inactive", 403);
+      throw new ApiError("Unauthorized: User is inactive", 403);
     }
     //otp-generate for existingUser
     const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
@@ -37,23 +37,23 @@ const verifyOtp = async ({ phone, otp }, { ipAddress }) => {
     "+otp +otpExpires"
   );
   if (!user) {
-    throw new Error("User not found", 404);
+    throw new ApiError("User not found", 404);
   }
   if (!user.isActive) {
-    throw new Error("Unauthorized: User is inactive", 403);
+    throw new ApiError("Unauthorized: User is inactive", 403);
   }
 
   if (!user.otp || !user.otpExpires) {
-    throw new Error("No OTP found for this user", 400);
+    throw new ApiError("No OTP found for this user", 400);
   }
 
   if (user.otpExpires < new Date()) {
-    throw new Error("OTP has expired", 400);
+    throw new ApiError("OTP has expired", 400);
   }
 
   const isMatch = await bcrypt.compare(otp, user.otp);
   if (!isMatch) {
-    throw new Error("Invalid OTP", 400);
+    throw new ApiError("Invalid OTP", 400);
   }
 
   // Clear OTP and otpExpires after successful verification
@@ -101,10 +101,10 @@ const resendOtp = async (phone) => {
     "+otp +otpExpires"
   );
   if (!user) {
-    throw new Error("User not found", 404);
+    throw new ApiError("User not found", 404);
   }
   if (!user.isActive) {
-    throw new Error("Unauthorized: User is inactive", 403);
+    throw new ApiError("Unauthorized: User is inactive", 403);
   }
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
@@ -143,7 +143,7 @@ const createUser = async ({
   //   existingUser = await User.findOne({ phone, deleted_at: null });
   // }
   if (existingUser) {
-    throw new Error("User already exists with this phone or email", 400);
+    throw new ApiError("User already exists with this phone or email", 400);
   }
 
   const generatedOtp =
@@ -179,7 +179,7 @@ const createSimpleUser = async ({ phone, location }) => {
   // Check if user already exists
   const existingUser = await User.findOne({ phone, deleted_at: null });
   if (existingUser) {
-    throw new Error("User already exists with this phone number", 400);
+    throw new ApiError("User already exists with this phone number", 400);
   }
 
   // Generate OTP for verification
@@ -215,7 +215,7 @@ const updateSimpleUser = async (userId, updates) => {
   // Check if user exists
   const user = await User.findOne({ _id: userId, deleted_at: null });
   if (!user) {
-    throw new Error("User not found", 404);
+    throw new ApiError("User not found", 404);
   }
 
   // Define allowed fields for simple user updates
@@ -250,7 +250,7 @@ const updateSimpleUser = async (userId, updates) => {
       deleted_at: null,
     });
     if (existingUserWithEmail) {
-      throw new Error("Email is already taken by another user", 400);
+      throw new ApiError("Email is already taken by another user", 400);
     }
   }
 
@@ -292,18 +292,18 @@ const loginUserAdmin = async ({ email, password }, { ipAddress }) => {
     "+password"
   );
   if (!user) {
-    throw new Error("Invalid credentials", 401);
+    throw new ApiError("Invalid credentials", 401);
   }
   if (!user.isActive) {
-    throw new Error("Unauthorized: User is inactive", 403);
+    throw new ApiError("Unauthorized: User is inactive", 403);
   }
   if (user.role !== "Admin") {
-    throw new Error("Unauthorized: Only Admin users can log in", 403);
+    throw new ApiError("Unauthorized: Only Admin users can log in", 403);
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new Error("Invalid credentials", 401);
+    throw new ApiError("Invalid credentials", 401);
   }
 
   await LoginHistory.create({
@@ -333,11 +333,11 @@ const getUserById = async (userId, requestingUser) => {
     "-password -otp -otpExpires"
   );
   if (!user) {
-    throw new Error("User not found", 404);
+    throw new ApiError("User not found", 404);
   }
 
   if (requestingUser.role !== "Admin" && requestingUser.id !== userId) {
-    throw new Error("Unauthorized to access this user", 403);
+    throw new ApiError("Unauthorized to access this user", 403);
   }
 
   return {
@@ -348,7 +348,7 @@ const getUserById = async (userId, requestingUser) => {
 
 const getAllUsers = async (page = 1, limit = 10, requestingUser, search) => {
   if (requestingUser.role !== "Admin") {
-    throw new Error("Unauthorized to access all users", 403);
+    throw new ApiError("Unauthorized to access all users", 403);
   }
 
   const skip = (page - 1) * limit;
@@ -392,7 +392,7 @@ const getAllUsers = async (page = 1, limit = 10, requestingUser, search) => {
 
 const updateUser = async (userId, updates, requestingUser) => {
   if (requestingUser.role !== "Admin" && requestingUser.id !== userId) {
-    throw new Error("Unauthorized to update this user", 403);
+    throw new ApiError("Unauthorized to update this user", 403);
   }
   const allowedUpdates = [
     "first_name",
@@ -413,13 +413,13 @@ const updateUser = async (userId, updates, requestingUser) => {
   const isValidUpdate = updateKeys.every((key) => allowedUpdates.includes(key));
 
   if (!isValidUpdate) {
-    throw new Error("Invalid update fields", 400);
+    throw new ApiError("Invalid update fields", 400);
   }
   const user = await User.findOne({ _id: userId, deleted_at: null }).select(
     "+password +otp +otpExpires"
   );
   if (!user) {
-    throw new Error("User not found", 404);
+    throw new ApiError("User not found", 404);
   }
 
   if (updates.image && user.image) {
@@ -440,12 +440,12 @@ const updateUser = async (userId, updates, requestingUser) => {
 
 const deleteUser = async (userId, requestingUser) => {
   if (requestingUser.role !== "Admin" && requestingUser.id !== userId) {
-    throw new Error("Unauthorized to delete this user", 403);
+    throw new ApiError("Unauthorized to delete this user", 403);
   }
 
   const user = await User.findOne({ _id: userId, deleted_at: null });
   if (!user) {
-    throw new Error("User not found", 404);
+    throw new ApiError("User not found", 404);
   }
 
   user.deleted_at = new Date();
@@ -457,16 +457,16 @@ const deleteUser = async (userId, requestingUser) => {
 
 const enableUser = async (userId, requestingUser) => {
   if (requestingUser.role !== "Admin") {
-    throw new Error("Unauthorized to enable user", 403);
+    throw new ApiError("Unauthorized to enable user", 403);
   }
 
   const user = await User.findOne({ _id: userId, deleted_at: null });
   if (!user) {
-    throw new Error("User not found", 404);
+    throw new ApiError("User not found", 404);
   }
 
   if (user.isActive) {
-    throw new Error("User is already enabled", 400);
+    throw new ApiError("User is already enabled", 400);
   }
 
   user.isActive = true;
@@ -477,16 +477,16 @@ const enableUser = async (userId, requestingUser) => {
 
 const disableUser = async (userId, requestingUser) => {
   if (requestingUser.role !== "Admin") {
-    throw new Error("Unauthorized to disable user", 403);
+    throw new ApiError("Unauthorized to disable user", 403);
   }
 
   const user = await User.findOne({ _id: userId, deleted_at: null });
   if (!user) {
-    throw new Error("User not found", 404);
+    throw new ApiError("User not found", 404);
   }
 
   if (!user.isActive) {
-    throw new Error("User is already disabled", 400);
+    throw new ApiError("User is already disabled", 400);
   }
 
   user.isActive = false;

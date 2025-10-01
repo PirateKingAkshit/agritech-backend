@@ -92,7 +92,7 @@ userSchema.index(
 // Ensure email is unique only if not deleted
 userSchema.index(
   { email: 1 },
-  { unique: true, partialFilterExpression: { deleted_at: null } }
+  { unique: true,sparse: true, partialFilterExpression: { deleted_at: null } }
 );
 
 module.exports = mongoose.model("User", userSchema);

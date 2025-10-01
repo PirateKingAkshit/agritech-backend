@@ -1,11 +1,11 @@
 const MediaMaster = require("../models/mediaMaster");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 
 const createMediaService = async (files, type, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const mediaItems = [];
   const baseUrl = process.env.BASE_URL
@@ -55,18 +55,18 @@ const getAllMediaService = async (page, limit, search, type) => {
 const getMediaByIdService = async (id) => {
   const media = await MediaMaster.findById(id);
   if (!media) {
-    throw new Error("Media not found", 404);
+    throw new ApiError("Media not found", 404);
   }
   return media;
 };
 
 const deleteMediaService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const media = await MediaMaster.findById(id);
   if (!media) {
-    throw new Error("Media not found", 404);
+    throw new ApiError("Media not found", 404);
   }
   // Delete the associated file
   if (media.url) {

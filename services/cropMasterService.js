@@ -1,15 +1,15 @@
 const CropMaster = require("../models/cropMasterModel");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 
 const createCropService = async (cropData, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const existingCrop = await CropMaster.findOne({ name: cropData.name, deleted_at: null });
   if (existingCrop) {
-    throw new Error("Crop with this name already exists", 409);
+    throw new ApiError("Crop with this name already exists", 409);
   }
   const crop = new CropMaster(cropData); 
   await crop.save();
@@ -79,25 +79,25 @@ const getCropByIdService = async (id) => {
     deleted_at: null,
   });
   if (!crop) {
-    throw new Error("Crop not found", 404);
+    throw new ApiError("Crop not found", 404);
   }
   return crop;
 };
 
 const updateCropService = async (id, updates, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const existingCrop = await CropMaster.findOne({ name: updates.name, deleted_at: null, _id: { $ne: id } });
   if (existingCrop) {
-    throw new Error("Crop with this name already exists", 409);
+    throw new ApiError("Crop with this name already exists", 409);
   }
   const crop = await CropMaster.findOne({
     _id: id,
     deleted_at: null,
   });
   if (!crop) {
-    throw new Error("Crop not found", 404);
+    throw new ApiError("Crop not found", 404);
   }
   // If a new image is uploaded, delete the old image
   if (updates.image && crop.image) {
@@ -114,7 +114,7 @@ const updateCropService = async (id, updates, requestUser) => {
 
 const deleteCropService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const crop = await CropMaster.findOne({
     _id: id,
@@ -122,7 +122,7 @@ const deleteCropService = async (id, requestUser) => {
     isActive: true,
   });
   if (!crop) {
-    throw new Error("Crop not found", 404);
+    throw new ApiError("Crop not found", 404);
   }
   // Delete the associated image file
   if (crop.image) {
@@ -140,7 +140,7 @@ const deleteCropService = async (id, requestUser) => {
 
 const disableCropService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const crop = await CropMaster.findOne({
     _id: id,
@@ -148,7 +148,7 @@ const disableCropService = async (id, requestUser) => {
     isActive: true,
   });
   if (!crop) {
-    throw new Error("Crop not found", 404);
+    throw new ApiError("Crop not found", 404);
   }
   crop.isActive = false;
   await crop.save();
@@ -157,7 +157,7 @@ const disableCropService = async (id, requestUser) => {
 
 const enableCropService = async (id, requestUser) => {
   if (requestUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const crop = await CropMaster.findOne({
     _id: id,
@@ -165,7 +165,7 @@ const enableCropService = async (id, requestUser) => {
     isActive: false,
   });
   if (!crop) {
-    throw new Error("Crop not found", 404);
+    throw new ApiError("Crop not found", 404);
   }
   crop.isActive = true;
   await crop.save();

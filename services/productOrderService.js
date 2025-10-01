@@ -1,6 +1,6 @@
 const ProductOrder = require("../models/productOrderModel");
 const ProductMaster = require("../models/productMasterModel");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 
 function generateOrderId() {
   const now = new Date();
@@ -16,11 +16,11 @@ function generateOrderId() {
 
 const createOrderService = async (payload, requestingUser) => {
   if (!requestingUser?.id) {
-    throw new Error("Unauthorized", 401);
+    throw new ApiError("Unauthorized", 401);
   }
 
   if (!Array.isArray(payload.products) || payload.products.length === 0) {
-    throw new Error("At least one product is required", 400);
+    throw new ApiError("At least one product is required", 400);
   }
 
   // Build products array with price lookups and subtotal/total computations
@@ -30,12 +30,12 @@ const createOrderService = async (payload, requestingUser) => {
   for (const item of payload.products) {
     const product = await ProductMaster.findOne({ _id: item.productId, deleted_at: null, isActive: true });
     if (!product) {
-      throw new Error("Invalid product in order", 400);
+      throw new ApiError("Invalid product in order", 400);
     }
     const pricePerUnit = Number(item.pricePerUnit ?? product.price);
     const quantity = Number(item.quantity);
     if (!(quantity > 0)) {
-      throw new Error("Quantity must be greater than 0", 400);
+      throw new ApiError("Quantity must be greater than 0", 400);
     }
     const subTotal = pricePerUnit * quantity;
     computedTotal += subTotal;
@@ -61,7 +61,7 @@ const createOrderService = async (payload, requestingUser) => {
 
 const getMyOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
   if (!requestingUser?.id) {
-    throw new Error("Unauthorized", 401);
+    throw new ApiError("Unauthorized", 401);
   }
   const skip = (page - 1) * limit;
   const filter = {
@@ -89,7 +89,7 @@ const getMyOrdersService = async (requestingUser, { page = 1, limit = 10, status
 
 const getAllOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
   if (requestingUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const skip = (page - 1) * limit;
   const filter = {
@@ -120,10 +120,10 @@ const getOrderByIdService = async (id, requestingUser) => {
     .populate("userId", "first_name last_name phone role")
     .populate("products.productId", "name category price image");
   if (!order) {
-    throw new Error("Order not found", 404);
+    throw new ApiError("Order not found", 404);
   }
   if (requestingUser.role !== "Admin" && String(order.userId._id) !== String(requestingUser.id)) {
-    throw new Error("Unauthorized to access this order", 403);
+    throw new ApiError("Unauthorized to access this order", 403);
   }
   return order;
 };
@@ -131,30 +131,30 @@ const getOrderByIdService = async (id, requestingUser) => {
 const updateOrderUserService = async (id, updates, requestingUser) => {
   const order = await ProductOrder.findOne({ _id: id, deleted_at: null });
   if (!order) {
-    throw new Error("Order not found", 404);
+    throw new ApiError("Order not found", 404);
   }
   if (String(order.userId) !== String(requestingUser.id)) {
-    throw new Error("Unauthorized to update this order", 403);
+    throw new ApiError("Unauthorized to update this order", 403);
   }
   // Allow user to update products only when status is Pending
   if (order.status !== "Pending") {
-    throw new Error("Order cannot be edited once processing started", 400);
+    throw new ApiError("Order cannot be edited once processing started", 400);
   }
   if (updates.products) {
     if (!Array.isArray(updates.products) || updates.products.length === 0) {
-      throw new Error("products must be a non-empty array", 400);
+      throw new ApiError("products must be a non-empty array", 400);
     }
     const productsDetailed = [];
     let computedTotal = 0;
     for (const item of updates.products) {
       const product = await ProductMaster.findOne({ _id: item.productId, deleted_at: null, isActive: true });
       if (!product) {
-        throw new Error("Invalid product in order", 400);
+        throw new ApiError("Invalid product in order", 400);
       }
       const pricePerUnit = Number(item.pricePerUnit ?? product.price);
       const quantity = Number(item.quantity);
       if (!(quantity > 0)) {
-        throw new Error("Quantity must be greater than 0", 400);
+        throw new ApiError("Quantity must be greater than 0", 400);
       }
       const subTotal = pricePerUnit * quantity;
       computedTotal += subTotal;
@@ -169,11 +169,11 @@ const updateOrderUserService = async (id, updates, requestingUser) => {
 
 const updateOrderStatusService = async (id, updates, requestingUser) => {
   if (requestingUser.role !== "Admin") {
-    throw new Error("Unauthorized", 403);
+    throw new ApiError("Unauthorized", 403);
   }
   const order = await ProductOrder.findOne({ _id: id, deleted_at: null });
   if (!order) {
-    throw new Error("Order not found", 404);
+    throw new ApiError("Order not found", 404);
   }
   const allowedUpdates = ["status"];
   Object.keys(updates || {}).forEach((key) => {

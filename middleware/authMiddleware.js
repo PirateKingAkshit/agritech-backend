@@ -1,13 +1,13 @@
 const jwt = require("jsonwebtoken");
 const logger = require("../utils/logger");
-const Error = require("../utils/error");
+const ApiError = require("../utils/error");
 
 const authMiddleware = (req, res, next) => {
   const token = req.header("Authorization")?.replace("Bearer ", "");
 
   if (!token) {
     logger.warn(`Unauthorized access attempt: No token`);
-    return next(new Error("No token provided", 401));
+    return next(new ApiError("No token provided", 401));
   }
 
   try {
@@ -17,7 +17,7 @@ const authMiddleware = (req, res, next) => {
     next();
   } catch (error) {
     logger.warn(`Authentication failed: ${error.message}`);
-    next(new Error("Invalid or expired token", 401));
+    next(new ApiError("Invalid or expired token", 401));
   }
 };
 
