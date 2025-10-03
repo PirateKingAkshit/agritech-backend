@@ -5,6 +5,7 @@ const {
   validateUpdateProductOrderStatus,
   validatePagination,
   handleValidationErrors,
+  validateCartItems,
 } = require("../utils/validator");
 const {
   createOrderService,
@@ -13,6 +14,7 @@ const {
   getOrderByIdService,
   updateOrderUserService,
   updateOrderStatusService,
+  validateCartItemsService
 } = require("../services/productOrderService");
 
 const createOrder = [
@@ -87,6 +89,18 @@ const updateOrderStatus = [
   }),
 ];
 
+const validateCart = [
+  validateCartItems,
+  handleValidationErrors,
+  asyncHandler(async (req, res) => {
+    const result = await validateCartItemsService(req.body.productIds);
+    res.status(200).json({ 
+      message: "Cart validation completed", 
+      data: result 
+    });
+  }),
+];
+
 module.exports = {
   createOrder,
   getMyOrders,
@@ -94,5 +108,6 @@ module.exports = {
   getOrderById,
   updateOrderUser,
   updateOrderStatus,
+  validateCart
 };
 

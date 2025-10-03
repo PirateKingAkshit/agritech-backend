@@ -8,6 +8,7 @@ const {
   getOrderById,
   updateOrderUser,
   updateOrderStatus,
+  validateCart
 } = require("../controllers/productOrderController");
 
 // User routes
@@ -15,6 +16,7 @@ router.post("/user", authMiddleware, createOrder);
 router.get("/user", authMiddleware, getMyOrders);
 router.get("/user/:id", authMiddleware, getOrderById);
 router.put("/user/:id", authMiddleware, updateOrderUser);
+router.post("/validate-cart", authMiddleware, validateCart);
 
 // Admin routes
 router.get("/", authMiddleware, getAllOrders);

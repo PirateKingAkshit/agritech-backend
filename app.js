@@ -20,6 +20,7 @@ const marketRoutes = require("./routes/marketRoutes");
 const commodityRoutes = require("./routes/commodityRoutes");
 const mandiPriceRoutes = require("./routes/mandiPriceRoute");
 const recentUserActivity = require('./routes/recentActivityRoute');
+const textToSpeechRoutes = require('./routes/textToSpeechRoute');
 const logger = require("./utils/logger");
 const mime = require("mime");
 const fs = require("fs");
@@ -49,15 +50,15 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  logger.info("=== Incoming Request ===", {
-    path: req.originalUrl,
-    method: req.method,
-    headers: req.headers,
-    body: req.body,
-  });
-  next();
-});
+// app.use((req, res, next) => {
+//   logger.info("=== Incoming Request ===", {
+//     path: req.originalUrl,
+//     method: req.method,
+//     headers: req.headers,
+//     body: req.body,
+//   });
+//   next();
+// });
 
 // Routes
 app.use("/api/v1/users", userRoutes);
@@ -75,6 +76,7 @@ app.use("/api/v1/markets", marketRoutes);
 app.use("/api/v1/commodities", commodityRoutes);
 app.use("/api/v1/mandi-price", mandiPriceRoutes);
 app.use("/api/v1/recent-activities", recentUserActivity);
+app.use("/api/v1/textToSpeech", textToSpeechRoutes);
 
 // Health Check
 app.get("/api/v1/health", (req, res) => {

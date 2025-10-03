@@ -73,7 +73,7 @@ const verifyOtp = async ({ phone, otp }, { ipAddress }) => {
     { id: user._id, phone: user.phone, role: user.role },
     process.env.JWT_SECRET,
     {
-      expiresIn: "1h",
+      expiresIn: "30d",
     }
   );
   logger.info(

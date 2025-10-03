@@ -391,6 +391,16 @@ const validateUpdateProductOrderStatus = [
     .withMessage('Invalid status value'),
 ];
 
+const validateCartItems = [
+  body('productIds')
+    .isArray({ min: 1 })
+    .withMessage('productIds must be a non-empty array'),
+  body('productIds.*')
+    .isMongoId()
+    .withMessage('All product IDs must be valid ObjectIds'),
+];
+
+
 
 module.exports = {
   validateUser,
@@ -415,5 +425,6 @@ module.exports = {
   validateUpdateCropSaleRequestStatus,
   validateCreateProductOrder,
   validateUpdateProductOrderUser,
-  validateUpdateProductOrderStatus
+  validateUpdateProductOrderStatus,
+  validateCartItems
 };

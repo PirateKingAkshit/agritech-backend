@@ -185,6 +185,66 @@ const updateOrderStatusService = async (id, updates, requestingUser) => {
   return order;
 };
 
+const validateCartItemsService = async (productIds) => {
+  if (!Array.isArray(productIds) || productIds.length === 0) {
+    throw new ApiError("Product IDs array is required", 400);
+  }
+
+  const activeProducts = [];
+  const inactiveProducts = [];
+
+  for (const productId of productIds) {
+    try {
+      const product = await ProductMaster.findById(productId);
+      
+      if (!product) {
+        inactiveProducts.push({
+          productId,
+          reason: "Product not found",
+          status: "not_found"
+        });
+      } else if (product.deleted_at) {
+        inactiveProducts.push({
+          productId,
+          reason: "Product has been deleted",
+          status: "deleted",
+          productName: product.name
+        });
+      } else if (!product.isActive) {
+        inactiveProducts.push({
+          productId,
+          reason: "Product is not active",
+          status: "inactive",
+          productName: product.name
+        });
+      } else {
+        activeProducts.push({
+          productId,
+          productName: product.name,
+          price: product.price,
+          category: product.category,
+          status: "active"
+        });
+      }
+    } catch (error) {
+      inactiveProducts.push({
+        productId,
+        reason: "Invalid product ID",
+        status: "invalid_id"
+      });
+    }
+  }
+
+  return {
+    totalItems: productIds.length,
+    activeItems: activeProducts.length,
+    inactiveItems: inactiveProducts.length,
+    activeProducts,
+    inactiveProducts,
+    allItemsValid: inactiveProducts.length === 0
+  };
+};
+
 module.exports = {
   createOrderService,
   getMyOrdersService,
@@ -192,5 +252,6 @@ module.exports = {
   getOrderByIdService,
   updateOrderUserService,
   updateOrderStatusService,
+  validateCartItemsService
 };
 

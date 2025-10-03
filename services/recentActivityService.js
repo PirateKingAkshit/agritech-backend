@@ -13,7 +13,7 @@ const getLatestUserActivityService = async (user) => {
     userId: user.id,
     deleted_at: null,
   })
-    .populate("cropId", "name category") // populate cropId with name and category
+    .populate("cropId", "name category image description variety season ") // populate cropId with name and category
     .sort({ createdAt: -1 });
 
   // Latest product order
