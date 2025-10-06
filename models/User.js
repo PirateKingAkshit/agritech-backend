@@ -69,6 +69,13 @@ const userSchema = new mongoose.Schema(
     deleted_at: {
       type: Date,
     },
+    activeSessions: [
+      {
+        token: { type: String },
+        loginTime: { type: Date, default: Date.now },
+        userAgent: { type: String },
+      },
+    ],
   },
   { timestamps: true }
 );

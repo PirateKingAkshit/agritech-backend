@@ -75,4 +75,64 @@ const getDashboardStatsService = async (requestingUser, { from, to } = {}) => {
 
 module.exports = { getDashboardStatsService };
 
+// Search across schemes and tutorials
+const searchDashboardService = async (requestingUser, query, lang) => {
+  if (!query || !query.trim()) {
+    return { schemes: [], tutorials: [] };
+  }
+
+  const q = query.trim();
+  const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+
+  // Build scheme filter
+  const schemeFilter = { deleted_at: null, isActive: true };
+  if (lang && lang.trim()) {
+    schemeFilter["translation.language"] = lang.trim();
+    schemeFilter.$or = [
+      { "translation.name": regex },
+    ];
+  } else {
+    schemeFilter.$or = [
+      { name: regex },
+      { "translation.name": regex },
+    ];
+  }
+
+  // Build tutorial filter
+  const tutorialFilter = { deleted_at: null, isActive: true };
+  if (lang && lang.trim()) {
+    tutorialFilter.language = lang.trim();
+    tutorialFilter.$or = [{ name: regex }];
+  } else {
+    tutorialFilter.$or = [{ name: regex }];
+  }
+
+  // If lang is provided, only include that translation in response
+  const schemesPromise = lang && lang.trim()
+    ? GovernmentScheme.aggregate([
+        { $match: schemeFilter },
+        {
+          $addFields: {
+            translation: {
+              $filter: {
+                input: "$translation",
+                as: "t",
+                cond: { $eq: ["$$t.language", lang.trim()] },
+              },
+            },
+          },
+        },
+      ])
+    : GovernmentScheme.find(schemeFilter).lean();
+
+  const [schemes, tutorials] = await Promise.all([
+    schemesPromise,
+    TutorialsMaster.find(tutorialFilter).lean(),
+  ]);
+
+  return { schemes, tutorials };
+};
+
+module.exports.searchDashboardService = searchDashboardService;
+
 

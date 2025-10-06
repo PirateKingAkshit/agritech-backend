@@ -1,5 +1,5 @@
 const { asyncHandler } = require("../utils/asyncHandler");
-const { getDashboardStatsService } = require("../services/dashboardService");
+const { getDashboardStatsService, searchDashboardService } = require("../services/dashboardService");
 
 const getDashboardStats = asyncHandler(async (req, res) => {
   const { from, to } = req.query;
@@ -8,5 +8,13 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 });
 
 module.exports = { getDashboardStats };
+
+const searchDashboard = asyncHandler(async (req, res) => {
+  const { q, lang } = req.query;
+  const data = await searchDashboardService(req.user, q || "", lang || "");
+  res.status(200).json({ message: "Search results fetched successfully", data });
+});
+
+module.exports.searchDashboard = searchDashboard;
 
 

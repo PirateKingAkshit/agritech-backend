@@ -7,6 +7,9 @@ const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 
+const MAX_SESSIONS = 1; // 🔹 change this number to limit active devices
+
+
 const generateOtp = async (phone, location) => {
   const user = await User.findOne({ phone, deleted_at: null }).select(
     "+otp +otpExpires"
@@ -32,53 +35,41 @@ const generateOtp = async (phone, location) => {
   }
 };
 
-const verifyOtp = async ({ phone, otp }, { ipAddress }) => {
+const verifyOtp = async ({ phone, otp }, { req }) => {
   const user = await User.findOne({ phone, deleted_at: null }).select(
-    "+otp +otpExpires"
+    "+otp +otpExpires +activeSessions"
   );
-  if (!user) {
-    throw new ApiError("User not found", 404);
-  }
-  if (!user.isActive) {
-    throw new ApiError("Unauthorized: User is inactive", 403);
-  }
+  if (!user) throw new ApiError("User not found", 404);
+  if (!user.isActive) throw new ApiError("Unauthorized: User is inactive", 403);
 
-  if (!user.otp || !user.otpExpires) {
-    throw new ApiError("No OTP found for this user", 400);
-  }
-
-  if (user.otpExpires < new Date()) {
-    throw new ApiError("OTP has expired", 400);
-  }
+  if (!user.otp || !user.otpExpires) throw new ApiError("No OTP found", 400);
+  if (user.otpExpires < new Date()) throw new ApiError("OTP has expired", 400);
 
   const isMatch = await bcrypt.compare(otp, user.otp);
-  if (!isMatch) {
-    throw new ApiError("Invalid OTP", 400);
-  }
+  if (!isMatch) throw new ApiError("Invalid OTP", 400);
 
-  // Clear OTP and otpExpires after successful verification
   user.otp = undefined;
   user.otpExpires = undefined;
-  await user.save();
-
-  console.log("user", user);
-
-  await LoginHistory.create({
-    userId: user._id,
-    phone: user.phone,
-    ipAddress,
-  });
 
   const token = jwt.sign(
     { id: user._id, phone: user.phone, role: user.role },
     process.env.JWT_SECRET,
-    {
-      expiresIn: "30d",
-    }
+    { expiresIn: "30d" }
   );
-  logger.info(
-    `User logged in via OTP: ${phone} from IP ${ipAddress || "unknown"}`
-  );
+
+  const userAgent = req.headers["user-agent"] || "unknown";
+
+  user.activeSessions = user.activeSessions || [];
+  user.activeSessions.push({ token, loginTime: new Date(), userAgent });
+
+  if (user.activeSessions.length > MAX_SESSIONS) {
+    user.activeSessions = user.activeSessions.slice(-MAX_SESSIONS);
+  }
+
+  await user.save();
+  await LoginHistory.create({ userId: user._id, phone: user.phone });
+
+  logger.info(`User logged in via OTP: ${phone} from ${userAgent}`);
 
   return {
     token,
@@ -89,7 +80,6 @@ const verifyOtp = async ({ phone, otp }, { ipAddress }) => {
       role: user.role,
       first_name: user.first_name,
       last_name: user.last_name,
-      email: user.email,
       image: user.image,
       address: user.address,
     },
@@ -287,43 +277,39 @@ const updateSimpleUser = async (userId, updates) => {
   };
 };
 
-const loginUserAdmin = async ({ email, password }, { ipAddress }) => {
-  const user = await User.findOne({ email, deleted_at: null }).select(
-    "+password"
-  );
-  if (!user) {
-    throw new ApiError("Invalid credentials", 401);
-  }
-  if (!user.isActive) {
-    throw new ApiError("Unauthorized: User is inactive", 403);
-  }
-  if (user.role !== "Admin") {
-    throw new ApiError("Unauthorized: Only Admin users can log in", 403);
-  }
+const loginUserAdmin = async ({ email, password }, { req }) => {
+  const user = await User.findOne({ email, deleted_at: null })
+    .select("+password +activeSessions");
+  if (!user) throw new ApiError("Invalid credentials", 401);
+  if (!user.isActive) throw new ApiError("Unauthorized: User is inactive", 403);
+  if (user.role !== "Admin") throw new ApiError("Only Admin users can log in", 403);
 
   const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    throw new ApiError("Invalid credentials", 401);
-  }
-
-  await LoginHistory.create({
-    userId: user._id,
-    phone: user.phone,
-    ipAddress,
-  });
+  if (!isMatch) throw new ApiError("Invalid credentials", 401);
 
   const token = jwt.sign(
     { id: user._id, phone: user.phone, role: user.role, email: user.email },
     process.env.JWT_SECRET,
-    {
-      expiresIn: "12h",
-    }
+    { expiresIn: "12h" }
   );
-  logger.info(`User logged in: ${email} from IP ${ipAddress || "unknown"}`);
+
+  const userAgent = req.headers["user-agent"] || "unknown";
+
+  user.activeSessions = user.activeSessions || [];
+  user.activeSessions.push({ token, loginTime: new Date(), userAgent });
+
+  if (user.activeSessions.length > MAX_SESSIONS) {
+    user.activeSessions = user.activeSessions.slice(-MAX_SESSIONS);
+  }
+
+  await user.save();
+  await LoginHistory.create({ userId: user._id, phone: user.phone });
+
+  logger.info(`User logged in: ${email} from ${userAgent}`);
 
   return {
     token,
-    data: { id: user._id, phone: user.phone, email, role: user.role },
+    data: { id: user._id, phone: user.phone, email: user.email, role: user.role },
     message: "Login successful",
   };
 };
@@ -500,6 +486,35 @@ const getLoginHistory = async (userId) => {
   return history;
 };
 
+// List all active sessions
+const getActiveSessionsService = async (userId) => {
+  const user = await User.findById(userId).select("activeSessions");
+  if (!user) throw new ApiError("User not found", 404);
+  return user.activeSessions || [];
+};
+
+// Logout from current session (remove token)
+const logoutSessionService = async (userId, token) => {
+  const user = await User.findById(userId).select("activeSessions");
+  if (!user) throw new ApiError("User not found", 404);
+
+  user.activeSessions = (user.activeSessions || []).filter(
+    (session) => session.token !== token
+  );
+
+  await user.save();
+};
+
+// Logout from all sessions (clear all tokens)
+const logoutAllSessionsService = async (userId) => {
+  const user = await User.findById(userId).select("activeSessions");
+  if (!user) throw new ApiError("User not found", 404);
+
+  user.activeSessions = [];
+  await user.save();
+};
+
+
 module.exports = {
   generateOtp,
   verifyOtp,
@@ -515,4 +530,7 @@ module.exports = {
   enableUser,
   disableUser,
   getLoginHistory,
+  getActiveSessionsService,
+  logoutSessionService,
+  logoutAllSessionsService,
 };

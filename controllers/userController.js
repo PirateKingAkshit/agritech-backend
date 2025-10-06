@@ -25,6 +25,8 @@ const {
   enableUser,
   disableUser,
   getLoginHistory,
+  logoutAllSessionsService,
+  logoutSessionService,
 } = require("../services/userService");
 
 const generateOtpHandler = [
@@ -42,7 +44,7 @@ const verifyOtpHandler = [
   handleValidationErrors,
   asyncHandler(async (req, res) => {
     const { phone, otp } = req.body;
-    const result = await verifyOtp({ phone, otp }, { ipAddress: req.ip });
+    const result = await verifyOtp({ phone, otp }, { req });
     res.status(200).json(result);
   }),
 ];
@@ -142,7 +144,7 @@ const loginUser = [
     const { email, password } = req.body;
     const result = await loginUserAdmin(
       { email, password },
-      { ipAddress: req.ip }
+      { req }
     );
     res.status(200).json(result);
   }),
@@ -250,6 +252,28 @@ const getUserLoginHistory = asyncHandler(async (req, res) => {
   });
 });
 
+const getActiveSessions = asyncHandler(async (req, res) => {
+  const sessions = await getActiveSessionsService(req.user.id);
+  res.status(200).json({
+    message: "Active sessions fetched successfully",
+    data: sessions,
+  });
+});
+
+const logoutSession = asyncHandler(async (req, res) => {
+  const token = req.header("Authorization")?.replace("Bearer ", "");
+  if (!token) throw new ApiError("No token provided", 401);
+
+  await logoutSessionService(req.user.id, token);
+  res.status(200).json({ message: "Logged out from this device successfully" });
+});
+
+const logoutAllSessions = asyncHandler(async (req, res) => {
+  await logoutAllSessionsService(req.user.id);
+  res.status(200).json({ message: "Logged out from all devices successfully" });
+});
+
+
 module.exports = {
   generateOtpHandler,
   verifyOtpHandler,
@@ -266,4 +290,7 @@ module.exports = {
   enableUserAccount,
   disableUserAccount,
   getUserLoginHistory,
+  getActiveSessions,
+  logoutSession,
+  logoutAllSessions
 };

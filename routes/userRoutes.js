@@ -16,6 +16,9 @@ const {
   enableUserAccount,
   disableUserAccount,
   getUserLoginHistory,
+  getActiveSessions,
+  logoutSession,
+  logoutAllSessions,
 } = require("../controllers/userController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { createMulterInstance } = require("../utils/multerConfig");
@@ -43,5 +46,10 @@ router.put("/:id", authMiddleware, upload.single("image"), updateUserDetails);
 router.delete("/:id", authMiddleware, deleteUserAccount);
 router.put("/:id/enable", authMiddleware, enableUserAccount);
 router.put("/:id/disable", authMiddleware, disableUserAccount);
+
+// 🔹 Session management routes
+router.get("/sessions", authMiddleware, getActiveSessions);      // List active sessions
+router.post("/logout", authMiddleware, logoutSession);           // Logout current session
+router.post("/logout-all", authMiddleware, logoutAllSessions);   // Logout all sessions
 
 module.exports = router;
