@@ -82,52 +82,90 @@ const searchDashboardService = async (requestingUser, query, lang) => {
   }
 
   const q = query.trim();
-  const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
 
-  // Build scheme filter
-  const schemeFilter = { deleted_at: null, isActive: true };
-  if (lang && lang.trim()) {
-    schemeFilter["translation.language"] = lang.trim();
-    schemeFilter.$or = [
-      { "translation.name": regex },
-    ];
-  } else {
-    schemeFilter.$or = [
-      { name: regex },
-      { "translation.name": regex },
-    ];
-  }
+  // Prepare regex strings (not RegExp objects — MongoDB handles them inside $regexMatch)
+  const partialPattern = `.*${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}.*`;
+  const exactPattern = `^${q}$`;
 
-  // Build tutorial filter
-  const tutorialFilter = { deleted_at: null, isActive: true };
-  if (lang && lang.trim()) {
-    tutorialFilter.language = lang.trim();
-    tutorialFilter.$or = [{ name: regex }];
-  } else {
-    tutorialFilter.$or = [{ name: regex }];
-  }
+  // 🔹 SCHEMES: search + ranking
+  const schemesPromise = GovernmentScheme.aggregate([
+    {
+      $match: {
+        deleted_at: null,
+        isActive: true,
+        "translation.name": { $regex: partialPattern, $options: "iu" }
+      }
+    },
+    {
+      $addFields: {
+        matchedTranslation: {
+          $filter: {
+            input: "$translation",
+            as: "t",
+            cond: { $regexMatch: { input: "$$t.name", regex: partialPattern, options: "iu" } }
+          }
+        }
+      }
+    },
+    {
+      $addFields: {
+        matchScore: {
+          $cond: [
+            { $regexMatch: { input: { $arrayElemAt: ["$matchedTranslation.name", 0] }, regex: exactPattern, options: "iu" } },
+            2,
+            1
+          ]
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        name: { $arrayElemAt: ["$matchedTranslation.name", 0] },
+        image: { $arrayElemAt: ["$matchedTranslation.image", 0] },
+        description: { $arrayElemAt: ["$matchedTranslation.description", 0] },
+        matchScore: 1
+      }
+    },
+    { $sort: { matchScore: -1 } }
+  ]);
 
-  // If lang is provided, only include that translation in response
-  const schemesPromise = lang && lang.trim()
-    ? GovernmentScheme.aggregate([
-        { $match: schemeFilter },
-        {
-          $addFields: {
-            translation: {
-              $filter: {
-                input: "$translation",
-                as: "t",
-                cond: { $eq: ["$$t.language", lang.trim()] },
-              },
-            },
-          },
-        },
-      ])
-    : GovernmentScheme.find(schemeFilter).lean();
+  // 🔹 TUTORIALS: simple name-based search + ranking
+  const tutorialsPromise = TutorialsMaster.aggregate([
+    {
+      $match: {
+        deleted_at: null,
+        isActive: true,
+        name: { $regex: partialPattern, $options: "iu" }
+      }
+    },
+    {
+      $addFields: {
+        matchScore: {
+          $cond: [
+            { $regexMatch: { input: "$name", regex: exactPattern, options: "iu" } },
+            2,
+            1
+          ]
+        }
+      }
+    },
+    {
+      $project: {
+        _id: 0,
+        name: 1,
+        image: 1,
+        description: 1,
+        matchScore: 1
+      }
+    },
+    { $sort: { matchScore: -1 } }
+  ]);
 
+  // Run both queries in parallel
   const [schemes, tutorials] = await Promise.all([
     schemesPromise,
-    TutorialsMaster.find(tutorialFilter).lean(),
+    tutorialsPromise
   ]);
 
   return { schemes, tutorials };
