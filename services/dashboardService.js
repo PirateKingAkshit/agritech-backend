@@ -120,7 +120,7 @@ const searchDashboardService = async (requestingUser, query, lang) => {
     },
     {
       $project: {
-        _id: 0,
+        _id: 1,
         name: { $arrayElemAt: ["$matchedTranslation.name", 0] },
         image: { $arrayElemAt: ["$matchedTranslation.image", 0] },
         description: { $arrayElemAt: ["$matchedTranslation.description", 0] },
@@ -152,7 +152,7 @@ const searchDashboardService = async (requestingUser, query, lang) => {
     },
     {
       $project: {
-        _id: 0,
+        _id: 1,
         name: 1,
         image: 1,
         description: 1,
