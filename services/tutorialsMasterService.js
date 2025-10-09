@@ -76,7 +76,6 @@ const getActiveTutorialsPublicService = async (page, limit, search, lang) => {
 const getActiveTutorialsByIdPublicService = async (id, lang) => {
   const tutorial = await TutorialsMaster.findOne({
     _id: id,
-    language: lang,
     deleted_at: null,
     isActive: true,
   });
