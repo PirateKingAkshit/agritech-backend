@@ -29,7 +29,7 @@ dotenv.config();
 
 const app = express();
 
-// Security Middleware
+// Security Middleware 
 // app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 // app.use(
