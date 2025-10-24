@@ -21,6 +21,7 @@ const commodityRoutes = require("./routes/commodityRoutes");
 const mandiPriceRoutes = require("./routes/mandiPriceRoute");
 const recentUserActivity = require('./routes/recentActivityRoute');
 const textToSpeechRoutes = require('./routes/textToSpeechRoute');
+const chatRoutes = require("./routes/chatRoutes")
 const logger = require("./utils/logger");
 const mime = require("mime");
 const fs = require("fs");
@@ -77,6 +78,7 @@ app.use("/api/v1/commodities", commodityRoutes);
 app.use("/api/v1/mandi-price", mandiPriceRoutes);
 app.use("/api/v1/recent-activities", recentUserActivity);
 app.use("/api/v1/textToSpeech", textToSpeechRoutes);
+app.use("/api/v1/chat", chatRoutes);
 
 // Health Check
 app.get("/api/v1/health", (req, res) => {

@@ -59,7 +59,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["Admin", "User"],
+      enum: ["Admin", "User", "Support"], // ← Added "Support" role
       default: "User",
     },
     isActive: {
@@ -76,6 +76,26 @@ const userSchema = new mongoose.Schema(
         userAgent: { type: String },
       },
     ],
+
+    // ========================================
+    // CHAT SYSTEM FIELDS (Added for real-time chat functionality)
+    // ========================================
+    
+    // Tracks if user is currently online/connected to Socket.IO
+    // Used to show online/offline status in chat
+    // Updated when user connects/disconnects from Socket.IO
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
+    
+    // Stores last time user was seen (for "last seen" feature)
+    // Updated on disconnect or periodically while online
+    // Displayed as "Last seen 5 minutes ago" in chat UI
+    lastSeen: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 );
