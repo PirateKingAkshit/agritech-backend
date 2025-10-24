@@ -4,6 +4,7 @@ const logger = require('./utils/logger');
 const dotenv = require('dotenv')
 const { validateEnv } = require('./utils/envValidator');
 const mongoose = require('mongoose');
+const { setupSocketServer } = require('./socket/socketServer');
 
 const startServer = async () => {
   dotenv.config();
@@ -14,6 +15,9 @@ const startServer = async () => {
     const server = app.listen(PORT, () => {
       logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
     });
+
+    // Setup Socket.IO
+    setupSocketServer(server);
 
     // Graceful shutdown
     process.on('SIGTERM', shutdown);
