@@ -13,8 +13,8 @@ const validateUser = [
   // Role - optional but validated if present
   body('role')
     .optional({ checkFalsy: true })
-    .isIn(['Admin', 'User'])
-    .withMessage('Role must be Admin or User'),
+    .isIn(['Admin', 'User', 'Support'])
+    .withMessage('Role must be Admin or User or Support'),
 
   // Email - required if role is Admin
   body('email')
