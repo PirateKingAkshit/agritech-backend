@@ -282,7 +282,7 @@ const loginUserAdmin = async ({ email, password }, { req }) => {
     .select("+password +activeSessions");
   if (!user) throw new ApiError("Invalid credentials", 401);
   if (!user.isActive) throw new ApiError("Unauthorized: User is inactive", 403);
-  if (user.role !== "Admin") throw new ApiError("Only Admin users can log in", 403);
+  if (user.role !== "Admin" && user.role !== "Support" && user.role !== "User") throw new ApiError("Only Admin and Support can log in", 403);
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) throw new ApiError("Invalid credentials", 401);
