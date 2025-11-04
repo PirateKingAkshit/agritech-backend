@@ -273,6 +273,7 @@ const updateSimpleUser = async (userId, updates) => {
       city: user.city,
       address: user.address,
       role: user.role,
+      image: user.image,
     },
   };
 };
