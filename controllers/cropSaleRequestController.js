@@ -28,12 +28,13 @@ const getMySaleRequests = [
   validatePagination,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, status, q = "" } = req.query;
+    const { page = 1, limit = 10, status, q = "", language = "en" } = req.query;
     const result = await getMySaleRequestsService(req.user, {
       page: parseInt(page),
       limit: parseInt(limit),
       status,
       q,
+      language
     });
     res.status(200).json(result);
   }),

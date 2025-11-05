@@ -1,5 +1,6 @@
 const CropSaleRequest = require("../models/cropSaleRequestModel");
 const ApiError = require("../utils/error");
+const { translateObjectFields } = require("../utils/translateUtil");
 
 function generateRequestId() {
   const now = new Date();
@@ -30,7 +31,7 @@ const createSaleRequestService = async (payload, requestingUser) => {
   return request;
 };
 
-const getMySaleRequestsService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
+const getMySaleRequestsService = async (requestingUser, { page = 1, limit = 10, status, q = "", language = "en" }) => {
   if (!requestingUser?.id) {
     throw new ApiError("Unauthorized", 401);
   }
@@ -50,9 +51,20 @@ const getMySaleRequestsService = async (requestingUser, { page = 1, limit = 10, 
     .populate("cropId", "name category image")
     .sort({ createdAt: -1 })
     .skip(skip)
-    .limit(limit);
+    .limit(limit)
+    .lean();
+    
+    // Translate crop sale request fields if language is not English
+
+    const fieldsToTranslate = ["cropId.name", "cropId.category"];
+    const translatedData = await Promise.all(
+      data.map(async (item)=>{
+        return await translateObjectFields(item, fieldsToTranslate, language)
+      })
+    )
+
   return {
-    data,
+    translatedData,
     pagination: {
       currentPage: page,
       totalPages: Math.ceil(count / limit),

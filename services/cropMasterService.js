@@ -2,6 +2,7 @@ const CropMaster = require("../models/cropMasterModel");
 const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
+const { translateObjectFields } = require("../utils/translateUtil");
 
 const createCropService = async (cropData, requestUser) => {
   if (requestUser.role !== "Admin") {
@@ -48,7 +49,7 @@ const getAllCropsService = async (page, limit, search) => {
   };
 };
 
-const getActiveCropsPublicService = async (page, limit, search) => {
+const getActiveCropsPublicService = async (page, limit, search, language = "en") => {
   const skip = (page - 1) * limit;
   const baseFilter = {
     deleted_at: null,
@@ -65,10 +66,20 @@ const getActiveCropsPublicService = async (page, limit, search) => {
   const crops = await CropMaster.find(baseFilter)
     .skip(skip)
     .limit(limit)
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean(); // Use lean() for better performance and to get plain JavaScript objects
+  
+  // Translate crop fields if language is not English
+  const fieldsToTranslate = ['name', 'description', 'category', 'variety', 'season'];
+  const translatedCrops = await Promise.all(
+    crops.map(async (crop) => {
+      return await translateObjectFields(crop, fieldsToTranslate, language);
+    })
+  );
+
   const totalPages = Math.ceil(count / limit);
   return {
-    data: crops,
+    data: translatedCrops,
     pagination: { currentPage: page, totalPages, totalItems: count, limit },
   };
 };

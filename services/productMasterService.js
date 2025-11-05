@@ -2,6 +2,7 @@ const ProductMaster = require("../models/productMasterModel");
 const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
+const { translateObjectFields } = require("../utils/translateUtil");
 
 const createProductService = async (productData, requestUser) => {
   if (requestUser.role !== "Admin") {
@@ -48,7 +49,7 @@ const getAllProductsService = async (page, limit, search) => {
   };
 };
 
-const getActiveProductsPublicService = async (page, limit, search) => {
+const getActiveProductsPublicService = async (page, limit, search, language = "en") => {
   const skip = (page - 1) * limit;
   const baseFilter = {
     deleted_at: null,
@@ -63,10 +64,20 @@ const getActiveProductsPublicService = async (page, limit, search) => {
   const products = await ProductMaster.find(baseFilter)
     .skip(skip)
     .limit(limit)
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
+  
+  // Translate products fields if language is not English
+  const fieldsToTranslate = ["name", "category", "description"];
+  const translatedProducts = await Promise.all(
+    products.map(async (product)=>{
+      return await translateObjectFields(product, fieldsToTranslate, language)
+    })
+  )
+  
   const totalPages = Math.ceil(count / limit);
   return {
-    data: products,
+    data: translatedProducts,
     pagination: { currentPage: page, totalPages, totalItems: count, limit },
   };
 };

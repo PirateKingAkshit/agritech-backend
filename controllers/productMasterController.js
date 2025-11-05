@@ -40,11 +40,12 @@ const getAllProducts = asyncHandler(async (req, res) => {
 });
 
 const getActiveProductsPublic = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, q = "" } = req.query;
+  const { page = 1, limit = 10, q = "", language = "en" } = req.query;
   const result = await getActiveProductsPublicService(
     parseInt(page),
     parseInt(limit),
-    q
+    q,
+    language
   );
   res.status(200).json(result);
 });

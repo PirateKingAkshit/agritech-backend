@@ -35,8 +35,8 @@ const getAllCrops = asyncHandler(async (req, res) => {
 });
 
 const getActiveCropsPublic = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, q = "" } = req.query;
-  const result = await getActiveCropsPublicService(parseInt(page), parseInt(limit), q);
+  const { page = 1, limit = 10, q = "", language = "en" } = req.query;
+  const result = await getActiveCropsPublicService(parseInt(page), parseInt(limit), q, language);
   res.status(200).json(result);
 });
 
