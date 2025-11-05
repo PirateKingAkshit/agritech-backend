@@ -1,180 +1,236 @@
 const { Translate } = require('@google-cloud/translate').v2;
 const translateFallback = require('google-translate-api-x');
 const ApiError = require('./error');
-const dotenv = require('dotenv');
+const crypto = require("crypto");
+const  LANG_MAP  = require('./Lang_Map');
+require('dotenv').config();
 
-dotenv.config();
 
-// Initialize Google Cloud Translate client (only if credentials are available)
-let googleTranslateClient = null;
-const GOOGLE_CREDENTIALS_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-const GOOGLE_PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT_ID;
-const GOOGLE_KEY = process.env.GOOGLE_CLOUD_API_KEY;
+// init google
+let client = null;
+const { GOOGLE_APPLICATION_CREDENTIALS, GOOGLE_CLOUD_PROJECT_ID, GOOGLE_CLOUD_API_KEY } = process.env;
 
-try {
-  // Try to initialize Google Cloud Translate if credentials are available
-  if (GOOGLE_CREDENTIALS_PATH || GOOGLE_PROJECT_ID || GOOGLE_KEY) {
-    const config = {};
-    if (GOOGLE_CREDENTIALS_PATH) {
-      config.keyFilename = GOOGLE_CREDENTIALS_PATH;
-    }
-    if (GOOGLE_PROJECT_ID) {
-      config.projectId = GOOGLE_PROJECT_ID;
-    }
-    if (GOOGLE_KEY) {
-      config.key = GOOGLE_KEY;
-    }
-    googleTranslateClient = new Translate(config);
-    console.log('✅ Google Cloud Translate initialized successfully');
-  } else {
-    console.log('⚠️ Google Cloud Translate credentials not found, will use fallback only');
+if (GOOGLE_APPLICATION_CREDENTIALS || GOOGLE_CLOUD_PROJECT_ID || GOOGLE_CLOUD_API_KEY) {
+  try {
+    client = new Translate({
+      ...(GOOGLE_APPLICATION_CREDENTIALS && { keyFilename: GOOGLE_APPLICATION_CREDENTIALS }),
+      ...(GOOGLE_CLOUD_PROJECT_ID && { projectId: GOOGLE_CLOUD_PROJECT_ID }),
+      ...(GOOGLE_CLOUD_API_KEY && { key: GOOGLE_CLOUD_API_KEY }),
+    });
+    console.log("✅ Google Cloud Translate initialized");
+  } catch (err) {
+    console.log("⚠️ Failed to initialize Google Cloud Translate:", err.message);
   }
-} catch (error) {
-  console.warn('⚠️ Failed to initialize Google Cloud Translate, will use fallback:', error.message);
-  googleTranslateClient = null;
 }
 
-/**
- * Translate text using official Google Cloud Translate
- * @param {string} text - The text to translate
- * @param {string} targetLanguageCode - The target language code
- * @returns {Promise<string>} - The translated text
- */
-const translateWithOfficial = async (text, targetLanguageCode) => {
-  if (!googleTranslateClient) {
-    throw new Error('Google Cloud Translate client not initialized');
+// ========================= CACHE =============================
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const _cache = new Map();
+
+const makeKey = (lang, text) => {
+  return crypto.createHash("sha1").update(lang + "::" + text).digest("hex");
+};
+
+const getCached = (lang, text) => {
+  const key = makeKey(lang, text);
+  const entry = _cache.get(key);
+
+  if (!entry) return null;
+  if (Date.now() > entry.expires) {
+    _cache.delete(key);
+    return null;
+  }
+
+  return entry.value;
+};
+
+const setCached = (lang, text, result) => {
+  const key = makeKey(lang, text);
+  _cache.set(key, {
+    value: result,
+    expires: Date.now() + CACHE_TTL,
+  });
+};
+// ========================= END CACHE =========================
+
+// helpers
+const getValueByPath = (obj, path) => {
+  return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+};
+
+const setValueByPath = (obj, path, value) => {
+  const parts = path.split('.');
+  let ref = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    ref = ref[parts[i]];
+  }
+  ref[parts[parts.length - 1]] = value;
+};
+
+// single translator (kept same name)
+const translateText = async (text, targetLang) => {
+  if (!text?.trim()) throw new ApiError("Text cannot be empty", 400);
+  if (!targetLang) throw new ApiError("Target language is required", 400);
+
+  if (["en", "eng", "english"].includes(targetLang.toLowerCase())) return text;
+
+  const lang = LANG_MAP[targetLang.toLowerCase()] || targetLang.toLowerCase();
+
+  const cached = getCached(lang, text);
+  if (cached) return cached;
+
+  let translated;
+
+  if (client) {
+    try {
+      const [t] = await client.translate(text, lang);
+      translated = t || text;
+      setCached(lang, text, translated);
+      return translated;
+    } catch (err) {
+      console.log("Official API failed, using fallback:", err.message);
+    }
   }
 
   try {
-    const [translation] = await googleTranslateClient.translate(text, targetLanguageCode);
-    return translation;
-  } catch (error) {
-    throw new Error(`Google Cloud Translate error: ${error.message}`);
+    const r = await translateFallback(text, { to: lang });
+    translated = r.text || text;
+    setCached(lang, text, translated);
+    return translated;
+  } catch (err) {
+    console.log("Translation failed:", err.message);
+    throw new ApiError("Translation service unavailable", 500);
   }
 };
 
-/**
- * Translate text using fallback (free unofficial API)
- * @param {string} text - The text to translate
- * @param {string} targetLanguageCode - The target language code
- * @returns {Promise<string>} - The translated text
- */
-const translateWithFallback = async (text, targetLanguageCode) => {
-  try {
-    const result = await translateFallback(text, { to: targetLanguageCode });
-    return result.text || text;
-  } catch (error) {
-    throw new Error(`Fallback translation error: ${error.message}`);
-  }
-};
+// kept same name, but internal optimised per-object batching
+const translateObjectFields = async (obj, fields, targetLang) => {
+  if (["en", "eng", "english"].includes(targetLang.toLowerCase())) return obj;
 
-/**
- * Translate text to a target language using Google Translate with fallback
- * @param {string} text - The text to translate
- * @param {string} targetLanguageCode - The target language code (e.g., 'hi', 'te', 'ta', 'bn', 'kn', 'en')
- * @returns {Promise<string>} - The translated text
- */
-const translateText = async (text, targetLanguageCode) => {
-  try {
-    // If text is empty or null, return as is
-    if (!text || typeof text !== 'string' || text.trim() === '') {
-      return text;
-    }
+  // ✅ normalize using LANG_MAP
+  const lang = LANG_MAP[targetLang.toLowerCase()] || targetLang.toLowerCase();
 
-    // If target language is English or 'en', return original text
-    if (!targetLanguageCode || 
-        targetLanguageCode.toLowerCase() === 'en' || 
-        targetLanguageCode.toLowerCase() === 'eng' || 
-        targetLanguageCode.toLowerCase() === 'english') {
-      return text;
-    }
+  const translated = { ...obj };
 
-    // Map language codes to Google Translate format
-    const languageMap = {
-      'hin': 'hi',   // Hindi
-      'hi': 'hi',
-      'tel': 'te',   // Telugu
-      'te': 'te',
-      'tam': 'ta',   // Tamil
-      'ta': 'ta',
-      'ben': 'bn',   // Bengali
-      'bn': 'bn',
-      'kan': 'kn',   // Kannada
-      'kn': 'kn',
-      'mar': 'mr',   // Marathi
-      'mr': 'mr',
-      'guj': 'gu',   // Gujarati
-      'gu': 'gu',
-      'ori': 'or',   // Odia
-      'or': 'or',
-      'pan': 'pa',   // Punjabi
-      'pa': 'pa',
-      'mal': 'ml',   // Malayalam
-      'ml': 'ml',
-      'urd': 'ur',   // Urdu
-      'ur': 'ur',
-    };
+  const toTranslate = [];
+  const positions = [];
+  const seen = new Map();
 
-    // Get the mapped language code, default to the provided code if not found
-    const langCode = languageMap[targetLanguageCode.toLowerCase()] || targetLanguageCode.toLowerCase();
+  fields.forEach((field) => {
+    const originalVal = getValueByPath(obj, field);
 
-    // Try official Google Cloud Translate first (if available)
-    if (googleTranslateClient) {
-      try {
-        const translated = await translateWithOfficial(text, langCode);
-        return translated || text;
-      } catch (officialError) {
-        console.warn('Official Google Cloud Translate failed, using fallback:', officialError.message);
-        // Fall through to use fallback
+    if (typeof originalVal === "string" && originalVal.trim()) {
+      // ✅ use normalized lang for caching
+      const cached = getCached(lang, originalVal);
+      if (cached) {
+        setValueByPath(translated, field, cached);
+        return;
       }
-    }
 
-    // Use fallback (free unofficial API)
-    const translated = await translateWithFallback(text, langCode);
-    return translated || text;
-
-  } catch (error) {
-    console.error('Translation error (both methods failed):', error.message);
-    // If all translation methods fail, return original text
-    return text;
-  }
-};
-
-/**
- * Translate multiple fields of an object
- * @param {Object} obj - The object containing fields to translate
- * @param {Array<string>} fieldsToTranslate - Array of field names to translate
- * @param {string} targetLanguageCode - The target language code
- * @returns {Promise<Object>} - The object with translated fields
- */
-const translateObjectFields = async (obj, fieldsToTranslate, targetLanguageCode) => {
-  if (!obj || typeof obj !== 'object') {
-    return obj;
-  }
-
-  // If language is English, return original object
-  if (!targetLanguageCode || 
-      targetLanguageCode.toLowerCase() === 'en' || 
-      targetLanguageCode.toLowerCase() === 'eng' || 
-      targetLanguageCode.toLowerCase() === 'english') {
-    return obj;
-  }
-
-  const translatedObj = { ...obj };
-
-  // Translate each field in parallel
-  const translationPromises = fieldsToTranslate.map(async (field) => {
-    if (obj[field] && typeof obj[field] === 'string' && obj[field].trim() !== '') {
-      translatedObj[field] = await translateText(obj[field], targetLanguageCode);
+      if (seen.has(originalVal)) {
+        positions.push({ field, idx: seen.get(originalVal) });
+      } else {
+        const idx = toTranslate.length;
+        seen.set(originalVal, idx);
+        toTranslate.push(originalVal);
+        positions.push({ field, idx });
+      }
     }
   });
 
-  await Promise.all(translationPromises);
+  if (!toTranslate.length) return translated;
 
-  return translatedObj;
+  let resultTexts = [];
+
+  if (client) {
+    try {
+      // ✅ use normalized lang for API
+      const [res] = await client.translate(toTranslate, lang);
+      resultTexts = Array.isArray(res) ? res : [res];
+    } catch (err) {
+      console.log("Official API batch failed:", err.message);
+    }
+  }
+
+  if (!resultTexts.length) {
+    resultTexts = await Promise.all(
+      toTranslate.map(async (txt) => {
+        const cached2 = getCached(lang, txt); // ✅ normalized lang
+        if (cached2) return cached2;
+        const r = await translateFallback(txt, { to: lang }); // ✅ normalized lang
+        return r.text;
+      })
+    );
+  }
+
+  positions.forEach(({ field, idx }) => {
+    const t = resultTexts[idx];
+    setValueByPath(translated, field, t);
+    setCached(lang, toTranslate[idx], t); // ✅ normalized lang
+  });
+
+  return translated;
+};
+
+
+// ---------------- GLOBAL ARRAY LEVEL OPTIMISATION ---------------------
+// THIS replaces Promise.all loop
+const translateArray = async (data, fieldsToTranslate, language) => {
+  if (["en", "eng", "english"].includes(language.toLowerCase())) return data;
+
+  const globalTextList = [];
+  const globalIndexMap = [];
+
+  data.forEach((item, itemIndex) => {
+    fieldsToTranslate.forEach((field) => {
+      const val = getValueByPath(item, field);
+
+      if (typeof val === "string" && val.trim()) {
+        const cached = getCached(language, val);
+        if (cached) {
+          setValueByPath(item, field, cached);
+        } else {
+          globalIndexMap.push({ itemIndex, field, val });
+          globalTextList.push(val);
+        }
+      }
+    });
+  });
+
+  if (!globalTextList.length) return data;
+
+  let translations = [];
+
+  if (client) {
+    try {
+      const [res] = await client.translate(globalTextList, language);
+      translations = Array.isArray(res) ? res : [res];
+    } catch (e) {
+      console.log("global google batch failed:", e.message);
+    }
+  }
+
+  if (!translations.length) {
+    translations = await Promise.all(
+      globalTextList.map(async (txt) => {
+        const cached2 = getCached(language, txt);
+        if (cached2) return cached2;
+        const r = await translateFallback(txt, { to: language });
+        return r.text;
+      })
+    );
+  }
+
+  globalIndexMap.forEach((m, idx) => {
+    setValueByPath(data[m.itemIndex], m.field, translations[idx]);
+    setCached(language, m.val, translations[idx]);
+  });
+
+  return data;
 };
 
 module.exports = {
   translateText,
   translateObjectFields,
+  translateArray,
 };
