@@ -1,6 +1,7 @@
 const ProductOrder = require("../models/productOrderModel");
 const ProductMaster = require("../models/productMasterModel");
 const ApiError = require("../utils/error");
+const { translateObjectFields } = require("../utils/translateUtil");
 
 function generateOrderId() {
   const now = new Date();
@@ -59,10 +60,11 @@ const createOrderService = async (payload, requestingUser) => {
   return order;
 };
 
-const getMyOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "" }) => {
+const getMyOrdersService = async (requestingUser, { page = 1, limit = 10, status, q = "", language = "en" }) => {
   if (!requestingUser?.id) {
     throw new ApiError("Unauthorized", 401);
   }
+
   const skip = (page - 1) * limit;
   const filter = {
     deleted_at: null,
@@ -70,12 +72,30 @@ const getMyOrdersService = async (requestingUser, { page = 1, limit = 10, status
     ...(status ? { status } : {}),
     $or: q ? [{ orderId: { $regex: q, $options: "i" } }] : [{}],
   };
+
   const count = await ProductOrder.countDocuments(filter);
+
   const data = await ProductOrder.find(filter)
     .populate("products.productId", "name category price image")
     .sort({ createdAt: -1 })
     .skip(skip)
-    .limit(limit);
+    .limit(limit)
+    .lean();
+
+  // Translate each productId.name individually
+  if (language.toLowerCase() !== "en") {
+    for (const order of data) {
+      for (const p of order.products) {
+        if (p.productId) {
+          // Convert to plain object if not already
+          const prodObj = { ...p.productId };
+          const translated = await translateObjectFields(prodObj, ["name","category"], language);
+          p.productId = translated;
+        }
+      }
+    }
+  }
+
   return {
     data,
     pagination: {
