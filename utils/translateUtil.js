@@ -148,7 +148,7 @@ const translateObjectFields = async (obj, fields, targetLang) => {
       const [res] = await client.translate(toTranslate, lang);
       resultTexts = Array.isArray(res) ? res : [res];
     } catch (err) {
-      console.log("Official API batch failed:", err.message);
+      console.log("Official API batch failed2:", err.message);
     }
   }
 
