@@ -21,13 +21,12 @@ const createProductService = async (productData, requestUser) => {
   return product;
 };
 
-const getAllProductsService = async (page, limit, search) => {
+const getAllProductsService = async (page, limit, search, category) => {
   const skip = (page - 1) * limit;
   const count = await ProductMaster.countDocuments({
     deleted_at: null,
     $or: [
       { name: { $regex: search, $options: "i" } },
-      { category: { $regex: search, $options: "i" } },
       { skuCode: { $regex: search, $options: "i" } },
     ],
   });
@@ -35,10 +34,10 @@ const getAllProductsService = async (page, limit, search) => {
     deleted_at: null,
     $or: [
       { name: { $regex: search, $options: "i" } },
-      { category: { $regex: search, $options: "i" } },
       { skuCode: { $regex: search, $options: "i" } },
     ],
-  })
+    ...(category ? { category } : {}),
+  }).populate("category","name")
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 });
@@ -49,26 +48,26 @@ const getAllProductsService = async (page, limit, search) => {
   };
 };
 
-const getActiveProductsPublicService = async (page, limit, search, language = "en") => {
+const getActiveProductsPublicService = async (page, limit, search, language = "en", category) => {
   const skip = (page - 1) * limit;
   const baseFilter = {
     deleted_at: null,
     isActive: true,
     $or: [
       { name: { $regex: search, $options: "i" } },
-      { category: { $regex: search, $options: "i" } },
       { skuCode: { $regex: search, $options: "i" } },
     ],
+    ...(category ? { category } : {})
   };
   const count = await ProductMaster.countDocuments(baseFilter);
-  const products = await ProductMaster.find(baseFilter)
+  const products = await ProductMaster.find(baseFilter).populate("category","name")
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 })
     .lean();
   
   // Translate products fields if language is not English
-  const fieldsToTranslate = ["name", "category", "description"];
+  const fieldsToTranslate = ["name", "category.name", "description"];
   const translatedProducts = await Promise.all(
     products.map(async (product)=>{
       return await translateObjectFields(product, fieldsToTranslate, language)
@@ -86,7 +85,7 @@ const getProductByIdService = async (id) => {
   const product = await ProductMaster.findOne({
     _id: id,
     deleted_at: null,
-  });
+  }).populate("category","name");
   if (!product) {
     throw new ApiError("Product not found", 404);
   }

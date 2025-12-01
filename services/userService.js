@@ -7,7 +7,7 @@ const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 
-const MAX_SESSIONS = 1; // 🔹 change this number to limit active devices
+const MAX_SESSIONS = 3; // 🔹 change this number to limit active devices
 
 
 const generateOtp = async (phone, location) => {

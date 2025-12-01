@@ -64,7 +64,7 @@ const getMySaleRequestsService = async (requestingUser, { page = 1, limit = 10, 
     )
 
   return {
-    translatedData,
+    data : translatedData,
     pagination: {
       currentPage: page,
       totalPages: Math.ceil(count / limit),
