@@ -116,6 +116,13 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+
+    //stores unique fcm_token for each user, if login from multiple devices
+    fcmToken: {
+      type: [String],
+      default: []
+    }
+
   },
   { timestamps: true }
 );

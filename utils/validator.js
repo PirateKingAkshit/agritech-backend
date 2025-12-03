@@ -1,6 +1,7 @@
 const { body, validationResult, param, query } = require('express-validator');
 const Error = require('./error');
 const ProductCategory = require('../models/productCategoryMaster');
+const { trim } = require('zod');
 
 const validateUser = [
   // Phone - Always required
@@ -130,6 +131,13 @@ const validateSimpleRegistration = [
     .withMessage('Phone number is required')
     .matches(/^\+?[1-9]\d{1,14}$/)
     .withMessage('Invalid phone number format'),
+
+  body('userType')
+    .trim()
+    .notEmpty()
+    .withMessage('User type is required')
+    .bail()
+    .isIn(["Farmer", "Seller", "Local Dealers", "Distributors", "Buyer"]),
   
   body('location.lat')
     .optional({ checkFalsy: true })

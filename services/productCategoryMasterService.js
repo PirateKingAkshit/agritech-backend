@@ -24,15 +24,24 @@ const createProductCategoryService = async (categoryData, requestUser) => {
 
 // Get All (Admin)
 const getAllProductCategoriesService = async (page, limit, search) => {
-  const skip = (page - 1) * limit;
-
   const filter = {
     deleted_at: null,
     $or: [
       { name: { $regex: search, $options: "i" } },
     ]
   };
+  //for product category drop-down
+  if (!page || !limit) {
+    const categories = await ProductCategory
+      .find(filter)
+      .sort({ name: 1 }); // A → Z
+    return {
+      data: categories,
+      pagination: null
+    };
+  }
 
+  const skip = (page - 1) * limit;
   const count = await ProductCategory.countDocuments(filter);
 
   const categories = await ProductCategory.find(filter)

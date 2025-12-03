@@ -14,8 +14,6 @@ const {
     deleteProductCategoryService,
 } = require("../services/productCategoryMasterService");
 
-
-
 const createProductCategory = [
   validateCreateProductCategory,
   handleValidationErrors,
@@ -27,7 +25,7 @@ const createProductCategory = [
 ];
 
 const getAllProductCategories = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, q = "" } = req.query;
+  const { page, limit, q = "" } = req.query;
   const result = await getAllProductCategoriesService(parseInt(page), parseInt(limit), q);
   res.status(200).json(result);
 });

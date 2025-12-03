@@ -1,7 +1,9 @@
 const ProductOrder = require("../models/productOrderModel");
 const ProductMaster = require("../models/productMasterModel");
+const User = require('../models/User');
 const ApiError = require("../utils/error");
 const { translateObjectFields } = require("../utils/translateUtil");
+const {sendPushNotification} = require("../utils/sendPushNotification");
 
 function generateOrderId() {
   const now = new Date();
@@ -202,6 +204,16 @@ const updateOrderStatusService = async (id, updates, requestingUser) => {
     }
   });
   await order.save();
+
+  // Send notification to the user
+  const user = await User.findById(order.userId);
+  if (user?.fcmToken?.length) {
+    await sendPushNotification(user.fcmToken, {
+      title: "Order Update",
+      body: `Your order (${order.orderId}) is now ${order.status}.`,
+    });
+  }
+
   return order;
 };
 

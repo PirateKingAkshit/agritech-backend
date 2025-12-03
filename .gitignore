@@ -37,3 +37,6 @@ coverage/
 
 # Misc
 *.tgz
+
+#firebase-key
+config/serviceAccountKey.json

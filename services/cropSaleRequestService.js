@@ -1,6 +1,8 @@
 const CropSaleRequest = require("../models/cropSaleRequestModel");
+const User = require('../models/User');
 const ApiError = require("../utils/error");
 const { translateObjectFields } = require("../utils/translateUtil");
+const {sendPushNotification} = require('../utils/sendPushNotification');
 
 function generateRequestId() {
   const now = new Date();
@@ -161,6 +163,15 @@ const updateSaleRequestStatusService = async (id, updates, requestingUser) => {
     }
   });
   await request.save();
+  //send notification to user
+  const user = await User.findById(request.userId);
+  if (user?.fcmToken?.length > 0) {
+    await sendPushNotification(user.fcmTokens, {
+      title: "Crop Sale Request Updated",
+      body: `Your crop sale request (${request.requestId}) is now "${request.status}".`,
+    });
+  }
+
   return request;
 };
 
