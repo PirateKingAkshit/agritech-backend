@@ -218,6 +218,11 @@ const updateSimpleUser = async (userId, updates) => {
     "city",
     "address",
     "image",
+    "userType",
+    "soilType",
+    "cropType",
+    "landSize",
+    "farmLocation",
   ];
 
   // Filter out invalid fields
@@ -242,6 +247,11 @@ const updateSimpleUser = async (userId, updates) => {
     if (existingUserWithEmail) {
       throw new ApiError("Email is already taken by another user", 400);
     }
+  }
+
+  const allowedUserTypes = ["Farmer", "Seller", "Local Dealers", "Distributors", "Buyer"];
+  if (validUpdates.userType && !allowedUserTypes.includes(validUpdates.userType)) {
+    throw new ApiError("Invalid userType value", 400);
   }
 
   if (updates.image && user.image) {
@@ -274,6 +284,11 @@ const updateSimpleUser = async (userId, updates) => {
       address: user.address,
       role: user.role,
       image: user.image,
+      userType: user.userType,
+      soilType: user.soilType,
+      cropType: user.cropType,
+      landSize: user.landSize,
+      farmLocation: user.farmLocation,
     },
   };
 };
@@ -392,6 +407,11 @@ const updateUser = async (userId, updates, requestingUser) => {
     "address",
     "role",
     "image",
+    "userType",
+    "soilType",
+    "cropType",
+    "landSize",
+    "farmLocation",
     "createdAt",
     "updatedAt",
   ];
@@ -402,6 +422,12 @@ const updateUser = async (userId, updates, requestingUser) => {
   if (!isValidUpdate) {
     throw new ApiError("Invalid update fields", 400);
   }
+
+  const allowedUserTypes = ["Farmer", "Seller", "Local Dealers", "Distributors", "Buyer"];
+  if (updates.userType && !allowedUserTypes.includes(updates.userType)) {
+    throw new ApiError("Invalid userType value", 400);
+  }
+
   const user = await User.findOne({ _id: userId, deleted_at: null }).select(
     "+password +otp +otpExpires"
   );
