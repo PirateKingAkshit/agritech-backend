@@ -27,14 +27,15 @@ const {
   getLoginHistory,
   logoutAllSessionsService,
   logoutSessionService,
+  saveUserFCMTokenService
 } = require("../services/userService");
 
 const generateOtpHandler = [
   validateOtpGenerate,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const { phone, location } = req.body;
-    const result = await generateOtp(phone, location);
+    const { phone, location, userType } = req.body;
+    const result = await generateOtp(phone, location, userType);
     res.status(200).json(result);
   }),
 ];
@@ -117,8 +118,8 @@ const registerSimpleUser = [
   validateSimpleRegistration,
   handleValidationErrors,
   asyncHandler(async (req, res) => {
-    const { phone, location } = req.body;
-    const result = await createSimpleUser({ phone, location });
+    const { phone, userType, location } = req.body;
+    const result = await createSimpleUser({ phone, userType, location });
     res.status(200).json(result);
   }),
 ];
@@ -273,6 +274,15 @@ const logoutAllSessions = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Logged out from all devices successfully" });
 });
 
+const saveFCMToken = asyncHandler(async (req, res) => {
+  const { fcmToken } = req.body;
+  if (!fcmToken) {
+    return res.status(400).json({ message: "FCM token is required" });
+  }
+  await saveUserFCMTokenService(req.user.id, fcmToken);
+  res.status(200).json({ message: "FCM token saved successfully"});
+});
+
 
 module.exports = {
   generateOtpHandler,
@@ -292,5 +302,6 @@ module.exports = {
   getUserLoginHistory,
   getActiveSessions,
   logoutSession,
-  logoutAllSessions
+  logoutAllSessions,
+  saveFCMToken
 };

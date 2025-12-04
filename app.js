@@ -7,6 +7,7 @@ const helmet = require("helmet");
 const { errorMiddleware } = require("./middleware/errorMiddleware");
 const userRoutes = require("./routes/userRoutes");
 const cropMasterRoutes = require("./routes/cropMasterRoutes");
+const productCategoryMasterRoutes = require("./routes/productCategoryMasterRoutes");
 const productMasterRoutes = require("./routes/productRoutes");
 const governmentSchemeRoutes = require("./routes/governmentSchemeRoutes");
 const mediaMasterRoutes = require("./routes/mediaMasterRoutes");
@@ -64,6 +65,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/crop-master", cropMasterRoutes);
+app.use("/api/v1/product-category-master", productCategoryMasterRoutes);
 app.use("/api/v1/product-master", productMasterRoutes);
 app.use("/api/v1/government-scheme", governmentSchemeRoutes);
 app.use("/api/v1/media-master", mediaMasterRoutes);

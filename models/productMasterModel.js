@@ -24,8 +24,8 @@ const productMasterSchema = new mongoose.Schema(
       required: [true, "Product price is required"],
     },
     category: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ProductCategory",
       required: [true, "Product category is required"],
     },
     description: {

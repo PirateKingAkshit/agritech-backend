@@ -49,6 +49,10 @@ const productOrderSchema = new mongoose.Schema(
       default: "Pending",
       index: true,
     },
+    remarks: {
+      type: String,
+      trim: true,
+    },
     deleted_at: {
       type: Date,
       default: null,

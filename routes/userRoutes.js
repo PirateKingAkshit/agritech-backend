@@ -19,6 +19,7 @@ const {
   getActiveSessions,
   logoutSession,
   logoutAllSessions,
+  saveFCMToken,
 } = require("../controllers/userController");
 const { authMiddleware } = require("../middleware/authMiddleware");
 const { createMulterInstance } = require("../utils/multerConfig");
@@ -51,5 +52,7 @@ router.put("/:id/disable", authMiddleware, disableUserAccount);
 router.get("/sessions", authMiddleware, getActiveSessions);      // List active sessions
 router.post("/logout", authMiddleware, logoutSession);           // Logout current session
 router.post("/logout-all", authMiddleware, logoutAllSessions);   // Logout all sessions
+
+router.post('/save-fcm-token', authMiddleware, saveFCMToken);
 
 module.exports = router;

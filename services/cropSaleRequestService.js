@@ -1,6 +1,8 @@
 const CropSaleRequest = require("../models/cropSaleRequestModel");
+const User = require('../models/User');
 const ApiError = require("../utils/error");
 const { translateObjectFields } = require("../utils/translateUtil");
+const {sendPushNotification} = require('../utils/sendPushNotification');
 
 function generateRequestId() {
   const now = new Date();
@@ -64,7 +66,7 @@ const getMySaleRequestsService = async (requestingUser, { page = 1, limit = 10, 
     )
 
   return {
-    translatedData,
+    data : translatedData,
     pagination: {
       currentPage: page,
       totalPages: Math.ceil(count / limit),
@@ -154,6 +156,7 @@ const updateSaleRequestStatusService = async (id, updates, requestingUser) => {
   }
   const allowedUpdates = [
     "status", // Admin can only update status now
+    "remarks"
   ];
   Object.keys(updates || {}).forEach((key) => {
     if (allowedUpdates.includes(key)) {
@@ -161,6 +164,19 @@ const updateSaleRequestStatusService = async (id, updates, requestingUser) => {
     }
   });
   await request.save();
+  //send notification to user
+  const user = await User.findById(request.userId);
+  if (user?.fcmToken?.length > 0) {
+    await sendPushNotification(user.fcmToken, {
+      title: "Crop Sale Request Updated",
+      body: `Your crop sale request (${request.requestId}) is now "${request.status}".`,
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        type: "cropSaleRequestUpdate"
+      }
+    });
+  }
+
   return request;
 };
 

@@ -1,5 +1,7 @@
 const { body, validationResult, param, query } = require('express-validator');
 const Error = require('./error');
+const ProductCategory = require('../models/productCategoryMaster');
+const { trim } = require('zod');
 
 const validateUser = [
   // Phone - Always required
@@ -129,6 +131,13 @@ const validateSimpleRegistration = [
     .withMessage('Phone number is required')
     .matches(/^\+?[1-9]\d{1,14}$/)
     .withMessage('Invalid phone number format'),
+
+  body('userType')
+    .trim()
+    .notEmpty()
+    .withMessage('User type is required')
+    .bail()
+    .isIn(["Farmer", "Seller", "Local Dealers", "Distributors", "Buyer"]),
   
   body('location.lat')
     .optional({ checkFalsy: true })
@@ -227,7 +236,14 @@ const validateCreateProduct = [
   body('skuCode').trim().notEmpty().withMessage('SKU Code is required'),
   body('unit').trim().notEmpty().withMessage('Unit is required'),
   body('price').trim().notEmpty().withMessage('Price is required'),
-  body('category').trim().notEmpty().withMessage('Category is required'),
+  body('category').trim().notEmpty().withMessage('Category is required').isMongoId().withMessage('Invalid category ID').custom(async (value) => {
+    // Here you can add a check to see if the category exists in the database
+    const category = await ProductCategory.findById(value);
+    if (!category) {
+      throw new Error('Product Category does not exist');
+    }
+    return true;
+  }),
   body('description').trim().notEmpty().withMessage('Description is required'),
 ]
 
@@ -400,6 +416,10 @@ const validateCartItems = [
     .withMessage('All product IDs must be valid ObjectIds'),
 ];
 
+const validateCreateProductCategory = [
+  body('name').trim().notEmpty().withMessage('Name is required'),
+];
+
 
 
 module.exports = {
@@ -426,5 +446,6 @@ module.exports = {
   validateCreateProductOrder,
   validateUpdateProductOrderUser,
   validateUpdateProductOrderStatus,
-  validateCartItems
+  validateCartItems,
+  validateCreateProductCategory
 };

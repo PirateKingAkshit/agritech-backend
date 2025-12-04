@@ -76,6 +76,26 @@ const userSchema = new mongoose.Schema(
         userAgent: { type: String },
       },
     ],
+    userType: {
+      type: String,
+      enum: ["Farmer", "Seller", "Local Dealers", "Distributors", "Buyer"]
+    },
+    soilType: {
+      type: String,
+      trim: true
+    },
+    cropType: {
+      type: String,
+      trim: true
+    },
+    landSize: {
+      type: Number, // in acres
+      min: 0
+    },
+    farmLocation: {
+      type: String,
+      trim: true
+    },
 
     // ========================================
     // CHAT SYSTEM FIELDS (Added for real-time chat functionality)
@@ -96,6 +116,13 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+
+    //stores unique fcm_token for each user, if login from multiple devices
+    fcmToken: {
+      type: [String],
+      default: []
+    }
+
   },
   { timestamps: true }
 );

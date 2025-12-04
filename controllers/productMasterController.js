@@ -30,22 +30,24 @@ const createProduct = [
 ];
 
 const getAllProducts = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, q = "" } = req.query;
+  const { page = 1, limit = 10, q = "", category = "" } = req.query;
   const result = await getAllProductsService(
     parseInt(page),
     parseInt(limit),
-    q
+    q,
+    category
   );
   res.status(200).json(result);
 });
 
 const getActiveProductsPublic = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, q = "", language = "en" } = req.query;
+  const { page = 1, limit = 10, q = "", language = "en", category = "" } = req.query;
   const result = await getActiveProductsPublicService(
     parseInt(page),
     parseInt(limit),
     q,
-    language
+    language,
+    category
   );
   res.status(200).json(result);
 });

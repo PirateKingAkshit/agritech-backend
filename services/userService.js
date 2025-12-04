@@ -7,10 +7,10 @@ const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 
-const MAX_SESSIONS = 1; // 🔹 change this number to limit active devices
+const MAX_SESSIONS = 3; // 🔹 change this number to limit active devices
 
 
-const generateOtp = async (phone, location) => {
+const generateOtp = async (phone, location, userType) => {
   const user = await User.findOne({ phone, deleted_at: null }).select(
     "+otp +otpExpires"
   );
@@ -29,7 +29,7 @@ const generateOtp = async (phone, location) => {
     logger.info(`OTP generated for phone: ${phone}`);
     return { message: "OTP generated successfully", otp };
   } else {
-    const result = await createSimpleUser({ phone, location });
+    const result = await createSimpleUser({ phone, location, userType });
     logger.info(`OTP generated for phone: ${phone}`);
     return { message: "OTP generated successfully", otp: result.otp };
   }
@@ -165,7 +165,7 @@ const createUser = async ({
   }; // Return OTP for testing
 };
 
-const createSimpleUser = async ({ phone, location }) => {
+const createSimpleUser = async ({ phone, userType, location }) => {
   // Check if user already exists
   const existingUser = await User.findOne({ phone, deleted_at: null });
   if (existingUser) {
@@ -181,6 +181,7 @@ const createSimpleUser = async ({ phone, location }) => {
     otp,
     otpExpires,
     location,
+    userType,
     role: "User",
     isActive: true,
   });
@@ -194,6 +195,7 @@ const createSimpleUser = async ({ phone, location }) => {
     data: {
       id: user._id,
       phone,
+      userType,
       role: user.role,
       requiresOtpVerification: true,
     },
@@ -218,6 +220,10 @@ const updateSimpleUser = async (userId, updates) => {
     "city",
     "address",
     "image",
+    "soilType",
+    "cropType",
+    "landSize",
+    "farmLocation",
   ];
 
   // Filter out invalid fields
@@ -274,6 +280,10 @@ const updateSimpleUser = async (userId, updates) => {
       address: user.address,
       role: user.role,
       image: user.image,
+      soilType: user.soilType,
+      cropType: user.cropType,
+      landSize: user.landSize,
+      farmLocation: user.farmLocation,
     },
   };
 };
@@ -392,6 +402,11 @@ const updateUser = async (userId, updates, requestingUser) => {
     "address",
     "role",
     "image",
+    "userType",
+    "soilType",
+    "cropType",
+    "landSize",
+    "farmLocation",
     "createdAt",
     "updatedAt",
   ];
@@ -402,6 +417,12 @@ const updateUser = async (userId, updates, requestingUser) => {
   if (!isValidUpdate) {
     throw new ApiError("Invalid update fields", 400);
   }
+
+  const allowedUserTypes = ["Farmer", "Seller", "Local Dealers", "Distributors", "Buyer"];
+  if (updates.userType && !allowedUserTypes.includes(updates.userType)) {
+    throw new ApiError("Invalid userType value", 400);
+  }
+
   const user = await User.findOne({ _id: userId, deleted_at: null }).select(
     "+password +otp +otpExpires"
   );
@@ -515,6 +536,18 @@ const logoutAllSessionsService = async (userId) => {
   await user.save();
 };
 
+const saveUserFCMTokenService = async (userId, token) => {
+  const user = await User.findOne({ _id: userId, deleted_at: null });
+  if (!user) {
+    throw new ApiError("User not found", 404);
+  }
+
+  if (!user.fcmToken.includes(token)) {
+    user.fcmToken.push(token);
+  }
+  user.save();
+};
+
 
 module.exports = {
   generateOtp,
@@ -534,4 +567,5 @@ module.exports = {
   getActiveSessionsService,
   logoutSessionService,
   logoutAllSessionsService,
+  saveUserFCMTokenService
 };
