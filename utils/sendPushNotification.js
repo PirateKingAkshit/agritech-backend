@@ -1,5 +1,6 @@
 const admin = require("firebase-admin");
 const serviceAccount = require("../config/serviceAccountKey.json");
+const { User } = require("../models/User");
 
 if (!admin.apps.length) {
   admin.initializeApp({
@@ -8,21 +9,28 @@ if (!admin.apps.length) {
 }
 
 const sendPushNotification = async (tokens, payload) => {
-    const message = {
+  
+  const message = {
     notification: {
       title: payload.title,
       body: payload.body,
     },
+    data: payload.data || {},
     tokens: tokens,
   };
 
   try {
     const response = await admin.messaging().sendMulticast(message);
 
-    // Remove invalid tokens
-    response.responses.forEach((res, i) => {
+    response.responses.forEach(async (res, i) => {
       if (!res.success) {
         console.log("Invalid FCM token:", tokens[i]);
+
+        // Auto-delete token from DB
+        await User.updateMany(
+          { fcmToken: tokens[i] },
+          { $pull: { fcmToken: tokens[i] } }
+        );
       }
     });
 
@@ -31,5 +39,6 @@ const sendPushNotification = async (tokens, payload) => {
     console.error("FCM Error:", error);
   }
 };
+
 
 module.exports = {sendPushNotification};

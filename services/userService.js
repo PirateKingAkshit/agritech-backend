@@ -10,7 +10,7 @@ const path = require("path");
 const MAX_SESSIONS = 3; // 🔹 change this number to limit active devices
 
 
-const generateOtp = async (phone, location) => {
+const generateOtp = async (phone, location, userType) => {
   const user = await User.findOne({ phone, deleted_at: null }).select(
     "+otp +otpExpires"
   );
@@ -29,7 +29,7 @@ const generateOtp = async (phone, location) => {
     logger.info(`OTP generated for phone: ${phone}`);
     return { message: "OTP generated successfully", otp };
   } else {
-    const result = await createSimpleUser({ phone, location });
+    const result = await createSimpleUser({ phone, location, userType });
     logger.info(`OTP generated for phone: ${phone}`);
     return { message: "OTP generated successfully", otp: result.otp };
   }

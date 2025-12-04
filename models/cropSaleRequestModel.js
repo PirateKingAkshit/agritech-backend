@@ -41,6 +41,10 @@ const cropSaleRequestSchema = new mongoose.Schema(
       default: "Pending",
       index: true,
     },
+    remarks: {
+      type: String,
+      trim: true,
+    },
     ready_to_sell_on: {
       type: Date,
       required: true

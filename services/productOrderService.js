@@ -190,6 +190,7 @@ const updateOrderUserService = async (id, updates, requestingUser) => {
 };
 
 const updateOrderStatusService = async (id, updates, requestingUser) => {
+  console.log("updates",updates)
   if (requestingUser.role !== "Admin") {
     throw new ApiError("Unauthorized", 403);
   }
@@ -197,7 +198,7 @@ const updateOrderStatusService = async (id, updates, requestingUser) => {
   if (!order) {
     throw new ApiError("Order not found", 404);
   }
-  const allowedUpdates = ["status"];
+  const allowedUpdates = ["status","remarks"];
   Object.keys(updates || {}).forEach((key) => {
     if (allowedUpdates.includes(key)) {
       order[key] = updates[key];
@@ -211,6 +212,10 @@ const updateOrderStatusService = async (id, updates, requestingUser) => {
     await sendPushNotification(user.fcmToken, {
       title: "Order Update",
       body: `Your order (${order.orderId}) is now ${order.status}.`,
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        type: "productOrderUpdate"
+      }
     });
   }
 

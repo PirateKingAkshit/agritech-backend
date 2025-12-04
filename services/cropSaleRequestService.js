@@ -156,6 +156,7 @@ const updateSaleRequestStatusService = async (id, updates, requestingUser) => {
   }
   const allowedUpdates = [
     "status", // Admin can only update status now
+    "remarks"
   ];
   Object.keys(updates || {}).forEach((key) => {
     if (allowedUpdates.includes(key)) {
@@ -166,9 +167,13 @@ const updateSaleRequestStatusService = async (id, updates, requestingUser) => {
   //send notification to user
   const user = await User.findById(request.userId);
   if (user?.fcmToken?.length > 0) {
-    await sendPushNotification(user.fcmTokens, {
+    await sendPushNotification(user.fcmToken, {
       title: "Crop Sale Request Updated",
       body: `Your crop sale request (${request.requestId}) is now "${request.status}".`,
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        type: "cropSaleRequestUpdate"
+      }
     });
   }
 
