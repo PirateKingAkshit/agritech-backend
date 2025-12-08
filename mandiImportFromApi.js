@@ -94,7 +94,7 @@ const API_KEY = process.env.MANDI_API_KEY;
 async function fetchRetry(url, attempts = 3) {
   while (attempts--) {
     try {
-      return await axios.get(url, { timeout: 7000 });
+      return await axios.get(url, { timeout: 60000 });
     } catch (_) {
       if (!attempts) return null;
     }

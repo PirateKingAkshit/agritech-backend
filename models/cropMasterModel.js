@@ -9,23 +9,28 @@ const cropMasterSchema = new mongoose.Schema(
       unique: true,
     },
     category: {
-      type: String,
-      trim: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CropMaster",
+      default: null,
     },
     description: {
       type: String,
       trim: true,
+      default: "",
     },
     image: {
       type: String,
+      default: null,
     },
     variety: {
       type: String,
       trim: true,
+      default: "",
     },
     season: {
       type: String,
       trim: true,
+      default: "",
     },
     isActive: {
       type: Boolean,

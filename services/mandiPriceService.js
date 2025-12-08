@@ -4,44 +4,72 @@ const dotenv = require("dotenv");
 const { translateObjectFields } = require("../utils/translateUtil");
 dotenv.config();
 
-const getMandiPriceService = async (req, res) => {
-  const { state, district, market, commodity, language = "en" } = req.query;
-  if (!state || !district || !market || !commodity) {
-    throw new ApiError(
-      "Please provide state, district, market and commodity",
-      400
-    );
-  }
-  const apiKey = process.env.MANDI_API_KEY;
-
-  const format = "json";
-  const limit = 1000;
-  const url = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${apiKey}&format=${format}&limit=${limit}&filters%5Bstate.keyword%5D=${state}&filters%5Bdistrict%5D=${district}&filters%5Bmarket%5D=${market}&filters%5Bcommodity%5D=${commodity}`;
-  try {
-    const response = await axios.get(url);
-    if (response?.status === 200 && response?.statusText === "OK") {
-      // return response?.data?.records;
-      if ((language == "en")) {
-        return response?.data?.records;
-      } else {
-        const fieldsToTranslate = ["state", "district", "market", "commmodity", "variety"];
-        const translatedMandiPrice = await Promise.all(
-          response?.data?.records.map(async (record) => {
-            return await translateObjectFields(
-              record,
-              fieldsToTranslate,
-              language
-            );
-          })
-        );
-        return translatedMandiPrice
-      }
+const fetchWithRetry = async (url, retries = 3, timeout = 90000) => {
+  while (retries--) {
+    try {
+      return await axios.get(url, { timeout });
+    } catch (error) {
+      if (retries === 0) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // wait 2 sec
     }
-  } catch (error) {
-    console.log(error);
-
-    throw new ApiError("Failed to fetch mandi price", 500);
   }
 };
+
+const getMandiPriceService = async (req, res) => {
+  const { state, district, market, commodity } = req.query;
+  const language = "en";
+
+  const apiKey = process.env.MANDI_API_KEY;
+
+  // Base URL
+  let url = `https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070?api-key=${apiKey}&format=json&limit=1000`;
+
+  // Dynamic filters object
+  const filters = {
+    "state.keyword": state,
+    district,
+    market,
+    commodity,
+  };
+
+  // Append only filters that have values
+  for (const key in filters) {
+    if (filters[key]) {
+      url += `&filters%5B${encodeURIComponent(key)}%5D=${encodeURIComponent(filters[key])}`;
+    }
+  }
+
+  try {
+  const response = await fetchWithRetry(url);
+
+  if (response?.status === 200) {
+    let records = response.data.records;
+
+    // 🔥 Sort by commodity
+    records = records.sort((a, b) => a.commodity.localeCompare(b.commodity));
+
+    if (language === "en") return records;
+
+    const fieldsToTranslate = [
+      "state",
+      "district",
+      "market",
+      "commodity",
+      "variety",
+    ];
+
+    return await Promise.all(
+      records.map(async (record) => {
+        return translateObjectFields(record, fieldsToTranslate, language);
+      })
+    );
+  }
+} catch (error) {
+  console.log(error);
+  throw new ApiError("Failed to fetch mandi price", 500);
+}
+
+};
+
 
 module.exports = { getMandiPriceService };

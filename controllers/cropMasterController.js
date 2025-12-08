@@ -13,11 +13,14 @@ const {
   deleteCropService,
   disableCropService,
   enableCropService,
+  getParentCropsService,
+  getParentsCropPublicService,
+  getChildCropPublicService,
 } = require("../services/cropMasterService");
 
 const createCrop = [
-  validateCreateCrop,
-  handleValidationErrors,
+  // validateCreateCrop,
+  // handleValidationErrors,
   asyncHandler(async (req, res) => {
     const cropData = { ...req.body };
     if (req.file) {
@@ -36,7 +39,12 @@ const getAllCrops = asyncHandler(async (req, res) => {
 
 const getActiveCropsPublic = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, q = "", language = "en" } = req.query;
-  const result = await getActiveCropsPublicService(parseInt(page), parseInt(limit), q, language);
+  const result = await getActiveCropsPublicService(
+    parseInt(page),
+    parseInt(limit),
+    q,
+    language
+  );
   res.status(200).json(result);
 });
 
@@ -46,8 +54,8 @@ const getCropById = asyncHandler(async (req, res) => {
 });
 
 const updateCrop = [
-  validateUpdateCrop,
-  handleValidationErrors,
+  // validateUpdateCrop,
+  // handleValidationErrors,
   asyncHandler(async (req, res) => {
     const cropData = { ...req.body };
     if (req.file) {
@@ -73,6 +81,37 @@ const enableCrop = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Crop enabled successfully", data: crop });
 });
 
+const getParentCrops = asyncHandler(async (req, res) => {
+  const parentCrops = await getParentCropsService();
+  res
+    .status(200)
+    .json({ message: "Parent crops fetched successfully", data: parentCrops });
+});
+
+const getParentsCropPublic = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 10, q = "", language = "en" } = req.query;
+  const result = await getParentsCropPublicService(
+    parseInt(page),
+    parseInt(limit),
+    q,
+    language
+  );
+  res.status(200).json(result);
+});
+
+const getChildCropPublic = asyncHandler(async (req, res) => {
+  const { parentId } = req.params;
+  const { page = 1, limit = 10, q = "", language = "en" } = req.query;
+  const result = await getChildCropPublicService(
+    parentId,
+    parseInt(page),
+    parseInt(limit),
+    q,
+    language
+  );
+  res.status(200).json(result);
+});
+
 module.exports = {
   createCrop,
   getAllCrops,
@@ -82,4 +121,7 @@ module.exports = {
   deleteCrop,
   disableCrop,
   enableCrop,
+  getParentCrops,
+  getParentsCropPublic,
+  getChildCropPublic,
 };

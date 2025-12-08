@@ -10,6 +10,9 @@ const {
   deleteCrop,
   disableCrop,
   enableCrop,
+  getParentCrops,
+  getParentsCropPublic,
+  getChildCropPublic,
 } = require("../controllers/cropMasterController");
 const { createMulterInstance } = require("../utils/multerConfig");
 
@@ -22,8 +25,14 @@ const upload = createMulterInstance({
 
 router.post("/", authMiddleware, upload.single("image"), createCrop);
 router.get("/", authMiddleware, getAllCrops);
+// Get parent crops (crops where category is null)
+router.get("/parent-crops", authMiddleware, getParentCrops);
 // Public: active crops list (no auth)
 router.get("/public/active", getActiveCropsPublic);
+// Public: parent crops list (no auth)
+router.get("/public/parents", getParentsCropPublic);
+// Public: child crops by parentId (no auth)
+router.get("/public/children/:parentId", getChildCropPublic);
 router.get("/:id", authMiddleware, getCropById);
 router.put("/:id", authMiddleware, upload.single("image"), updateCrop);
 router.delete("/:id", authMiddleware, deleteCrop);

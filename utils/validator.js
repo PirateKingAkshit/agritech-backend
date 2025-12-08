@@ -217,7 +217,7 @@ const validateSimpleUserUpdate = [
 
 const validateCreateCrop = [
   body('name').trim().notEmpty().withMessage('Name is required'),
-  body('category').trim().notEmpty().withMessage('Category is required'),
+  body('category').optional().isMongoId().withMessage('Category must be a valid ID'),
   body('description').trim().notEmpty().withMessage('Description is required'),
   body('variety').trim().notEmpty().withMessage('Variety is required'),
   body('season').trim().notEmpty().withMessage('Season is required'),
@@ -225,7 +225,7 @@ const validateCreateCrop = [
 
 const validateUpdateCrop = [
   body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
-  body('category').optional().trim().notEmpty().withMessage('Category cannot be empty'),
+  body('category').optional().isMongoId().withMessage('Category must be a valid ID'),
   body('description').optional().trim().notEmpty().withMessage('Description cannot be empty'),
   body('variety').optional().trim().notEmpty().withMessage('Variety cannot be empty'),
   body('season').optional().trim().notEmpty().withMessage('Season cannot be empty'),
