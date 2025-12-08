@@ -44,6 +44,7 @@ const cropSaleRequestSchema = new mongoose.Schema(
     remarks: {
       type: String,
       trim: true,
+      default: null
     },
     ready_to_sell_on: {
       type: Date,

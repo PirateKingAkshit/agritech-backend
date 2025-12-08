@@ -52,6 +52,7 @@ const productOrderSchema = new mongoose.Schema(
     remarks: {
       type: String,
       trim: true,
+      default: null
     },
     deleted_at: {
       type: Date,

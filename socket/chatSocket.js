@@ -34,6 +34,7 @@ const Conversation = require("../models/Conversation");
 const Message = require("../models/Message");
 const MediaMaster = require("../models/mediaMaster");
 const logger = require("../utils/logger");
+const {sendPushNotification} = require("../utils/sendPushNotification");
 
 // ========================================
 // CONNECTED USERS TRACKER
@@ -396,6 +397,24 @@ const initializeSocket = (io) => {
             },
           });
         }
+
+        // Step 9.1: Send push notification if receiver has FCM tokens
+        const receiver = await User.findById(receiverId);
+
+        if (receiver?.fcmToken?.length > 0) {
+          await sendPushNotification(receiver.fcmToken, {
+            title: `New message from ${message.senderId.first_name}`,
+            body:
+              message.messageType === "text"
+                ? message.content
+                : `Sent a ${message.messageType}`,
+            data: {
+              click_action: "FLUTTER_NOTIFICATION_CLICK",
+              type: "chat",
+            },
+          });
+        }
+
 
         // Step 10: Send confirmation back to sender
         socket.emit("message:sent", {

@@ -82,6 +82,11 @@ const verifyOtp = async ({ phone, otp }, { req }) => {
       last_name: user.last_name,
       image: user.image,
       address: user.address,
+      userType: user.userType || null,
+      soilType: user.soilType || null,
+      cropType: user.cropType || null,
+      landSize: user.landSize || null,
+      farmLocation: user.farmLocation || null,
     },
   };
 };
