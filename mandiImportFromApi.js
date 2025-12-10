@@ -1,44 +1,81 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
-require("dotenv").config();
 const os = require("os");
+const path = require("path");
+
+// ✅ Always load .env from project root
+require("dotenv").config({
+  path: path.resolve(process.cwd(), ".env"),
+});
 
 // ------------------------------
-// CPU UTILIZATION (cross-platform)
+// MODELS
+// ------------------------------
+const District = require("./models/districtModel");
+const Market = require("./models/marketModel");
+const Commodity = require("./models/commodityModel");
+
+// ------------------------------
+// CPU LOAD
 // ------------------------------
 function getCpuLoad() {
-  // Windows fallback (loadavg useless)
   if (os.platform() === "win32") {
     const cpus = os.cpus();
-    let totalIdle = 0,
-      totalTick = 0;
-
+    let idle = 0,
+      total = 0;
     cpus.forEach((cpu) => {
-      for (let type in cpu.times) totalTick += cpu.times[type];
-      totalIdle += cpu.times.idle;
+      for (let t in cpu.times) total += cpu.times[t];
+      idle += cpu.times.idle;
     });
-
-    return 1 - totalIdle / totalTick; // returns 0 to 1
+    return 1 - idle / total;
   }
-
-  // Linux / Mac → real load
   return os.loadavg()[0] / os.cpus().length;
 }
 
-// ------------------------------
-// DYNAMIC CONCURRENCY MANAGER
-// ------------------------------
 function getDynamicConcurrency() {
-  const load = getCpuLoad(); // 0 = free, 1 = fully busy
-
-  if (load < 0.4) return 15; // cool
-  if (load < 0.7) return 10; // moderate
-  if (load < 1.0) return 5; // busy
-  return 2; // overheated
+  const load = getCpuLoad();
+  if (load < 0.4) return 15;
+  if (load < 0.7) return 10;
+  if (load < 1.0) return 5;
+  return 2;
 }
 
 // ------------------------------
-// CONCURRENCY RUNNER (safe, non-recursive)
+// RETRY API FUNCTION
+// ------------------------------
+async function fetchRetry(url, attempts = 3) {
+  while (attempts--) {
+    try {
+      return await axios.get(url, { timeout: 60000 });
+    } catch (err) {
+      console.log("❌ Fetch failed:", err.message);
+      if (!attempts) return null;
+    }
+  }
+  return null;
+}
+
+// ------------------------------
+// PROGRESS BAR
+// ------------------------------
+let lastRender = 0;
+function renderProgress(current, total, cpuLoad, concurrency) {
+  const now = Date.now();
+  if (now - lastRender < 120) return;
+  lastRender = now;
+
+  const percent = ((current / total) * 100).toFixed(1);
+  const barSize = 30;
+  const filled = Math.round((current / total) * barSize);
+  const bar = "█".repeat(filled) + "░".repeat(barSize - filled);
+
+  process.stdout.write(
+    `\r📡 Fetching Pages: [${bar}] ${percent}% | ${current}/${total} | CPU: ${(cpuLoad * 100).toFixed(0)}% | Concurrency: ${concurrency}`
+  );
+}
+
+// ------------------------------
+// DYNAMIC CONCURRENCY RUNNER
 // ------------------------------
 async function dynamicConcurrencyRunner(tasks) {
   const results = [];
@@ -50,8 +87,7 @@ async function dynamicConcurrencyRunner(tasks) {
     const tick = () => {
       const cpuLoad = getCpuLoad();
       const limit = getDynamicConcurrency();
-      
-      // Render progress bar
+
       renderProgress(completed, tasks.length, cpuLoad, limit);
 
       if (index >= tasks.length && active === 0) {
@@ -63,12 +99,18 @@ async function dynamicConcurrencyRunner(tasks) {
         const i = index++;
         active++;
 
-        tasks[i]().then((res) => {
-          results[i] = res;
-          active--;
-          completed++;
-          setImmediate(tick); // safe recursion
-        });
+        tasks[i]()
+          .then((res) => {
+            results[i] = res;
+            active--;
+            completed++;
+            setImmediate(tick);
+          })
+          .catch(() => {
+            active--;
+            completed++;
+            setImmediate(tick);
+          });
       }
 
       setTimeout(tick, 100);
@@ -78,72 +120,38 @@ async function dynamicConcurrencyRunner(tasks) {
   });
 }
 
-
-const State = require("./models/stateModel");
-const District = require("./models/districtModel");
-const Market = require("./models/marketModel");
-const Commodity = require("./models/commodityModel");
-
-const API_URL =
-  "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
-const API_KEY = process.env.MANDI_API_KEY;
-
-// -------------------------------------
-// SUPER FAST RETRY ROUTINE
-// -------------------------------------
-async function fetchRetry(url, attempts = 3) {
-  while (attempts--) {
-    try {
-      return await axios.get(url, { timeout: 60000 });
-    } catch (_) {
-      if (!attempts) return null;
-    }
-  }
-  return null;
-}
-
-// ------------------------------
-// LIVE PROGRESS BAR
-// ------------------------------
-let lastRender = 0;
-
-function renderProgress(current, total, cpuLoad, concurrency) {
-  const now = Date.now();
-
-  // update every 120ms → smooth and non-blocking
-  if (now - lastRender < 120) return;
-
-  lastRender = now;
-
-  const percent = ((current / total) * 100).toFixed(1);
-
-  const barSize = 30;
-  const filled = Math.round((current / total) * barSize);
-  const bar = "█".repeat(filled) + "░".repeat(barSize - filled);
-
-  process.stdout.write(
-    `\r📡 Fetching Pages: [${bar}] ${percent}% | ${current}/${total} ` +
-    `| CPU: ${(cpuLoad * 100).toFixed(0)}% ` +
-    `| Concurrency: ${concurrency}   `
-  );
-}
-
-
-// -------------------------------------
-// MAIN JOB
-// -------------------------------------
+// =========================================================
+//                    MAIN CRON JOB
+// =========================================================
 async function runMandiCronJob() {
-  console.time("TOTAL_TIME");
-  console.log("🚀 ULTRA FAST MANDI CRON STARTED");
+  console.log("🚀 MANDI CRON STARTED\n");
+
+  console.log("🔑 API KEY =", process.env.MANDI_API_KEY);
 
   await mongoose.connect(process.env.MONGO_URI);
 
-  // 1. GET TOTAL COUNT
-  const firstUrl = `${API_URL}?api-key=${API_KEY}&format=json&limit=1`;
+  // Load all districts from DB (STATIC)
+  const districts = await District.find().lean();
+  const districtMap = Object.fromEntries(
+    districts.map((d) => [d.name.toLowerCase(), d._id])
+  );
+
+  console.log(`📌 Loaded ${districts.length} districts from DB`);
+
+  // 1. Get total pages
+  const API_URL =
+    "https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070";
+
+  const firstUrl = `${API_URL}?api-key=${process.env.MANDI_API_KEY}&format=json&limit=1`;
+
+  console.log("🔍 Testing API URL:", firstUrl);
+
   const firstRes = await fetchRetry(firstUrl);
 
+  console.log("🔍 First API response:", firstRes?.data);
+
   if (!firstRes?.data?.total) {
-    console.error("❌ API failed.");
+    console.log("❌ Failed to get total count.");
     return process.exit(1);
   }
 
@@ -153,126 +161,73 @@ async function runMandiCronJob() {
 
   console.log(`📡 Total ${total} records | Pages: ${pages}`);
 
-  // 2. TASKS
+  // 2. Generate fetch tasks
   const tasks = [];
   for (let i = 0; i < pages; i++) {
     const offset = i * limit;
-    const url = `${API_URL}?api-key=${API_KEY}&format=json&limit=${limit}&offset=${offset}`;
+    const url = `${API_URL}?api-key=${process.env.MANDI_API_KEY}&format=json&limit=${limit}&offset=${offset}`;
     tasks.push(() => fetchRetry(url));
   }
 
-  // 3. FETCH WITH DYNAMIC CONCURRENCY
+  // 3. Run them with concurrency
   const responses = await dynamicConcurrencyRunner(tasks);
+
   const valid = responses.filter((r) => r?.data?.records);
 
-  if (valid.length === 0) return console.log("❌ All API fetches failed.");
+  if (valid.length === 0) {
+    console.log("❌ No valid API response received.");
+    return;
+  }
 
-  // 4. Dedup
-  const stateSet = new Set();
-  const districtMap = new Map();
-  const marketMap = new Map();
-  const commodityMap = new Map();
+  let marketMap = new Map();
+  let commodityMap = new Map();
 
+  // 4. Build Market + Commodity collections
   for (const res of valid) {
     for (const r of res.data.records) {
-      const state = r.state?.trim();
-      const district = r.district?.trim();
+      const district = r.district?.trim().toLowerCase();
       const market = r.market?.trim();
       const commodity = r.commodity?.trim();
 
-      if (!state || !district || !market || !commodity) continue;
+      if (!district || !market || !commodity) continue;
 
-      stateSet.add(state);
-      districtMap.set(`${state}|${district}`, { state, district });
-      marketMap.set(`${district}|${market}`, { district, market });
+      if (!districtMap[district]) continue; // ignore districts not in static list
+
+      const districtId = districtMap[district];
+
+      // unique key: district + market
+      marketMap.set(`${district}|${market}`, { market, districtId });
       commodityMap.set(`${market}|${commodity}`, { market, commodity });
     }
   }
 
-  // 5. BACKUP
-  console.log("🛟 Creating backup…");
+  console.log("\n📦 Market & Commodity extracted.");
 
-  const [oldStates, oldDistricts, oldMarkets, oldCommodities] =
-    await Promise.all([
-      State.find().lean(),
-      District.find().lean(),
-      Market.find().lean(),
-      Commodity.find().lean(),
-    ]);
+  // 5. Insert new data
+  await Market.deleteMany({});
+  await Commodity.deleteMany({});
 
-  console.log("🛟 Backup done.");
+  const insertedMarkets = await Market.insertMany(
+    [...marketMap.values()].map((m) => ({
+      name: m.market,
+      district: m.districtId,
+    }))
+  );
 
-  // 6. DELETE + INSERT (with rollback)
-  console.time("DB_WRITE");
+  const marketIdMap = Object.fromEntries(
+    insertedMarkets.map((m) => [m.name.toLowerCase(), m._id])
+  );
 
-  try {
-    await Promise.all([
-      State.deleteMany({}),
-      District.deleteMany({}),
-      Market.deleteMany({}),
-      Commodity.deleteMany({}),
-    ]);
+  await Commodity.insertMany(
+    [...commodityMap.values()].map((c) => ({
+      name: c.commodity,
+      market: marketIdMap[c.market.toLowerCase()],
+    }))
+  );
 
-    const insertedStates = await State.insertMany(
-      [...stateSet].map((name) => ({ name })),
-      { ordered: false }
-    );
-    const stateId = Object.fromEntries(
-      insertedStates.map((s) => [s.name, s._id])
-    );
-
-    const insertedDistricts = await District.insertMany(
-      [...districtMap.values()].map((d) => ({
-        name: d.district,
-        state: stateId[d.state],
-      })),
-      { ordered: false }
-    );
-    const districtId = Object.fromEntries(
-      insertedDistricts.map((d) => [d.name, d._id])
-    );
-
-    const insertedMarkets = await Market.insertMany(
-      [...marketMap.values()].map((m) => ({
-        name: m.market,
-        district: districtId[m.district],
-      })),
-      { ordered: false }
-    );
-    const marketId = Object.fromEntries(
-      insertedMarkets.map((m) => [m.name, m._id])
-    );
-
-    await Commodity.insertMany(
-      [...commodityMap.values()].map((c) => ({
-        name: c.commodity,
-        market: marketId[c.market],
-      })),
-      { ordered: false }
-    );
-
-    console.timeEnd("DB_WRITE");
-    console.log("🎉 MANDI UPDATE SUCCESSFUL");
-  } catch (err) {
-    console.error("❌ FAILED — Rolling back…", err);
-
-    await Promise.all([
-      State.deleteMany({}),
-      District.deleteMany({}),
-      Market.deleteMany({}),
-      Commodity.deleteMany({}),
-    ]);
-
-    await State.insertMany(oldStates);
-    await District.insertMany(oldDistricts);
-    await Market.insertMany(oldMarkets);
-    await Commodity.insertMany(oldCommodities);
-
-    console.log("🛟 ROLLBACK COMPLETE.");
-  }
+  console.log("\n🎉 MARKET & COMMODITY UPDATED SUCCESSFULLY");
 
   mongoose.connection.close();
-  console.timeEnd("TOTAL_TIME");
 }
 
 runMandiCronJob();
