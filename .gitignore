@@ -1,6 +1,8 @@
 # Node modules
 node_modules/
 
+insertDistrictScript.js
+
 # Logs
 logs/
 *.log

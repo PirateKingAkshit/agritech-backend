@@ -7,7 +7,7 @@ const getMarketByDistrictIdService = async (req, res, districtId) => {
   const markets = await Market.find({ district: districtId }).populate(
     "district",
     "name"
-  ).lean();
+  ).lean().sort({ name: 1 });
 
   const fieldsToTranslate = ["name","district.name"];
   const translatedMarkets = await Promise.all(

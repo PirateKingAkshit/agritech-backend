@@ -4,7 +4,7 @@ const { translateObjectFields } = require("../utils/translateUtil");
 const getDistrictByStateIdService = async (req, res, stateId) => {
   const { language = "en" } = req.query;
   
-  const districts = await District.find({ state: stateId }).populate("state", "name").lean();
+  const districts = await District.find({ state: stateId }).populate("state", "name").lean().sort({ name: 1 });
 
   const fieldsToTranslate = ["name","state.name"];
   const translatedDistricts = await Promise.all(
