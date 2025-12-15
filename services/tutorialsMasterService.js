@@ -3,6 +3,7 @@ const cleanQuillHtml = require("../utils/cleanQuillHtml");
 const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
+const extractYouTubeIframes = require("../utils/extractYouTubeIframes");
 
 const createTutorialService = async (data, requestUser) => {
   if (requestUser.role !== "Admin") throw new ApiError("Unauthorized", 403);
@@ -82,14 +83,15 @@ const getActiveTutorialsByIdPublicService = async (id, lang) => {
 
   if (!tutorial) throw new ApiError("Tutorial not found", 404);
 
-  // Clean description
-  const descriptionHtml = cleanQuillHtml(tutorial.description);
+  const cleanedHtml = cleanQuillHtml(tutorial.description);
+  const { cleanedHtml: safeHtml, videos } = extractYouTubeIframes(cleanedHtml);
 
   return {
     message: "Tutorial fetched successfully",
     data: {
       ...tutorial.toObject(),
-      descriptionHtml,
+      descriptionHtml: safeHtml,
+      videos,
     },
   };
 };
