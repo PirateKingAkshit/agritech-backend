@@ -96,6 +96,10 @@ const getAllSchemesService = async (page, limit, search) => {
 };
 
 const getActiveSchemesPublicService = async (page, limit, search, lang) => {
+  if(lang === "mr") lang = "mar";
+  if(lang === "te") lang = "tel";
+  if(lang === "kn") lang = "kan";
+
   const skip = (page - 1) * limit;
 
   const pipeline = [
@@ -167,6 +171,9 @@ const getActiveSchemesPublicService = async (page, limit, search, lang) => {
 };
 
 const getTopActiveSchemesPublicService = async (lang) => {
+  if(lang === "mr") lang = "mar";
+  if(lang === "te") lang = "tel";
+  if(lang === "kn") lang = "kan";
   const pipeline = [
     {
       $match: {

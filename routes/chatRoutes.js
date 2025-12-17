@@ -82,9 +82,12 @@ const chatMediaUpload = createMulterInstance({
     "video/quicktime", // MOV files
     
     // Audio formats
-    "audio/mpeg", // MP3
+    "audio/mpeg",   // MP3
+    "audio/mp4",    // M4A
+    "audio/x-m4a",  // M4A (iOS)
     "audio/wav",
     "audio/ogg",
+    
   ],
   maxFileSize: 10 * 1024 * 1024, // 10MB in bytes
   destinationFolder: "uploads/chat/", // Separate folder for chat media

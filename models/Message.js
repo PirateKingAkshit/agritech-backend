@@ -109,6 +109,7 @@ const messageSchema = new mongoose.Schema(
         return this.messageType === "text";
       },
       trim: true,
+      default: null,
     },
 
     /**
@@ -132,6 +133,7 @@ const messageSchema = new mongoose.Schema(
         // MediaId is required if message type is NOT "text"
         return ["image", "audio", "video"].includes(this.messageType);
       },
+      default: null,
     },
 
     // ========================================
