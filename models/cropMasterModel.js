@@ -32,6 +32,16 @@ const cropMasterSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    max_price: {
+      type: Number,
+      default: 0,
+      min: [0, "Max price cannot be negative"],
+    },
+    min_price: {
+      type: Number,
+      default: 0,
+      min: [0, "Min price cannot be negative"],
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -43,6 +53,6 @@ const cropMasterSchema = new mongoose.Schema(
   { timestamps: true } // Automatically adds created_at and updated_at
 );
 
-cropMasterSchema.index({ name: 1, deleted_at: 1 }, { unique: true });  //unique index for name and deleted_at
+cropMasterSchema.index({ name: 1, deleted_at: 1 }, { unique: true }); //unique index for name and deleted_at
 
 module.exports = mongoose.model("CropMaster", cropMasterSchema);

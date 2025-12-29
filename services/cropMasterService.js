@@ -24,6 +24,19 @@ const createCropService = async (cropData, requestUser) => {
       throw new ApiError("Invalid category selected", 409);
     }
   }
+  if (cropData.min_price != null && cropData.max_price != null) {
+    const min = Number(cropData.min_price);
+    const max = Number(cropData.max_price);
+
+    if (Number.isNaN(min) || Number.isNaN(max)) {
+      throw new ApiError("Price must be numeric", 409);
+    }
+
+    if (min > max) {
+      throw new ApiError("Invalid price range", 409);
+    }
+  }
+
   const crop = new CropMaster(cropData);
   await crop.save();
   return crop.populate("category", "name _id");
@@ -147,6 +160,19 @@ const updateCropService = async (id, updates, requestUser) => {
 
     if (!categoryExists) {
       throw new ApiError("Invalid category selected", 400);
+    }
+  }
+
+  if (updates.min_price != null && updates.max_price != null) {
+    const min = Number(updates.min_price);
+    const max = Number(updates.max_price);
+
+    if (Number.isNaN(min) || Number.isNaN(max)) {
+      throw new ApiError("Price must be numeric", 409);
+    }
+
+    if (min > max) {
+      throw new ApiError("Invalid price range", 409);
     }
   }
 
@@ -297,7 +323,6 @@ const getParentsCropPublicService = async (
     pagination: { currentPage: page, totalPages, totalItems: count, limit },
   };
 };
-
 
 const getChildCropPublicService = async (
   parentId,

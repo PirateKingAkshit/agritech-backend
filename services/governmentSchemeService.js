@@ -219,6 +219,9 @@ const getTopActiveSchemesPublicService = async (lang) => {
 
 
 const getActiveSchemesByIdPublicSerive = async (id, lang) => {
+  if(lang === "mr") lang = "mar";
+  if(lang === "te") lang = "tel";
+  if(lang === "kn") lang = "kan";
   const scheme = await GovernmentScheme.findOne({
     _id: id,
     isActive: true,
