@@ -298,7 +298,7 @@ const handleValidationErrors = (req, res, next) => {
 const validateCreateTutorial = [
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('language').trim().notEmpty().withMessage('Language is required'),
-  body('description')
+  body('descriptionWeb')
     .notEmpty().withMessage('Description is required')
     .custom((value) => {
       if (/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi.test(value)) {

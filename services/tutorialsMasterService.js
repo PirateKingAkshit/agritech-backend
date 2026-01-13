@@ -4,6 +4,7 @@ const ApiError = require("../utils/error");
 const fs = require("fs").promises;
 const path = require("path");
 const extractYouTubeIframes = require("../utils/extractYouTubeIframes");
+const embedHtmlToShareHtml = require("../utils/embedHtmlToShareHtml");
 
 const createTutorialService = async (data, requestUser) => {
   if (requestUser.role !== "Admin") throw new ApiError("Unauthorized", 403);
@@ -13,6 +14,9 @@ const createTutorialService = async (data, requestUser) => {
     deleted_at: null,
   });
   if (exists) throw new ApiError("Tutorial with this name already exists", 409);
+
+  // 🔥 Auto-generate Flutter HTML
+  data.description = embedHtmlToShareHtml(data.descriptionWeb);
 
   const tutorial = new TutorialsMaster(data);
   await tutorial.save();
@@ -83,15 +87,16 @@ const getActiveTutorialsByIdPublicService = async (id, lang) => {
 
   if (!tutorial) throw new ApiError("Tutorial not found", 404);
 
-  const cleanedHtml = cleanQuillHtml(tutorial.description);
-  const { cleanedHtml: safeHtml, videos } = extractYouTubeIframes(cleanedHtml);
-
   return {
     message: "Tutorial fetched successfully",
     data: {
       ...tutorial.toObject(),
-      descriptionHtml: safeHtml,
-      videos,
+
+      // 🌐 Web (embed iframe HTML)
+      descriptionWeb: cleanQuillHtml(tutorial.descriptionWeb),
+
+      // 📱 Flutter (share iframe HTML)
+      description: cleanQuillHtml(tutorial.description),
     },
   };
 };
@@ -123,6 +128,9 @@ const updateTutorialService = async (id, updates, requestUser) => {
     } catch (error) {
       console.error(`Failed to delete old image: ${tutorial.image}`, error);
     }
+  }
+  if (updates.descriptionWeb) {
+    updates.description = embedHtmlToShareHtml(updates.descriptionWeb);
   }
 
   Object.assign(tutorial, updates);

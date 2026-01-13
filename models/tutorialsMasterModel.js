@@ -13,6 +13,10 @@ const tutorialsMasterSchema = new mongoose.Schema(
       required: [true, "Description is required"],
       trim: true,
     },
+    descriptionWeb: {
+      type: String,
+      required: true,
+    },
     language: {
       type: String,
       required: [true, "Language is required"],
