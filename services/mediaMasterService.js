@@ -71,7 +71,7 @@ const deleteMediaService = async (id, requestUser) => {
   // Delete the associated file
   if (media.url) {
     try {
-      await fs.unlink(path.resolve(__dirname, "../", media.url.replace("http://localhost:5000/","")));
+      await fs.unlink(path.resolve(__dirname, "../", media.url.replace(`${baseUrl}/`,"")));
     } catch (error) {
       console.error(`Failed to delete file: ${media.url}`, error);
       // Continue with DB delete even if file delete fails

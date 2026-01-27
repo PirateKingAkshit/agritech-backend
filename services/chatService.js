@@ -750,7 +750,7 @@ const uploadChatMediaService = async (files, type, userId) => {
   const mediaItems = [];
 
   // Step 2: Get base URL from environment
-  const baseUrl = process.env.BASE_URL || "http://localhost:5000";
+  const baseUrl = process.env.BASE_URL;
 
   // Step 3: Process each uploaded file
   for (const file of files) {
