@@ -227,10 +227,10 @@ async function runMandiCronJob() {
 
   console.log("\n🎉 MARKET & COMMODITY UPDATED SUCCESSFULLY");
 
-  mongoose.connection.close(() => {
-    console.log("✅ Cron job finished. Exiting process.");
-    process.exit(0);
-  });
+  await mongoose.connection.close();
+  console.log("✅ Cron job finished. Exiting process.");
+  process.exit(0);
+  
   
 }
 
