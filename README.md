@@ -128,8 +128,14 @@ Range requests are supported for media streaming.
 Run directly with Node when needed:
 
 ```bash
-node mandiImportFromApi.jsnode insertStatesAndDistricts.jsnode migrateTutorialDescriptions.js
+node mandiImportFromApi.js
+node insertStatesAndDistricts.js
+node migrateTutorialDescriptions.js
 ```
+
+Cron requirement:
+
+- Schedule `mandiImportFromApi.js` as a cron job to keep mandi data updated regularly.
 
 ## Notes
 
