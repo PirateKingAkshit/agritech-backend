@@ -103,11 +103,6 @@ Main route groups:
 -   `/textToSpeech`
 -   `/chat`
 
-Detailed API references:
-
--   `api.md`
--   `api-doc.md`
-
 ## Socket.IO (Chat)
 
 Socket.IO is initialized in `index.js` on the same HTTP server as Express.  
